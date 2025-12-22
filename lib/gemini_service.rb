@@ -10,13 +10,11 @@ class GeminiService
     validate_api_key!
   end
 
-  # Perform code review on diff
   def code_review(parsed_diff, pr_number: nil)
     prompt = build_code_review_prompt(parsed_diff, pr_number)
     generate_content(prompt)
   end
 
-  # Generic content generation
   def generate_content(prompt, model: DEFAULT_MODEL)
     url = build_api_url(model)
     body = build_request_body(prompt)

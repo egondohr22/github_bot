@@ -7,8 +7,11 @@ class WebhooksController < ApplicationController
     head_branch = params[:head_branch]
     comment = params[:comment]
     diff = params[:diff]
+    owner = params[:owner]
+    repo = params[:repo]
 
     Rails.logger.info "Received GitHub webhook: PR ##{pr_number}"
+    Rails.logger.info "Repository: #{owner}/#{repo}"
     Rails.logger.info "Branches: #{base_branch}...#{head_branch}"
     Rails.logger.info "Comment: #{comment}"
     Rails.logger.info "Diff lines: #{diff&.lines&.count || 0}"
@@ -16,17 +19,25 @@ class WebhooksController < ApplicationController
     parsed_diff = parse_diff(diff)
     Rails.logger.info "Parsed #{parsed_diff.keys.count} files"
 
+    pr_data = {
+      'pr_number' => pr_number,
+      'base_branch' => base_branch,
+      'head_branch' => head_branch,
+      'comment' => comment,
+      'diff' => diff,
+      'owner' => owner,
+      'repo' => repo
+    }
+
+    GeminiReviewJob.perform_later(pr_data)
+    Rails.logger.info "Enqueued GeminiReviewJob for PR ##{pr_number}"
+
     message = "I'm processing your request for PR ##{pr_number}.\n\n"
     message += "**Files changed:**\n"
     parsed_diff.keys.each do |file|
       message += "- `#{file}`\n"
     end
-
-    gemini_review = fetch_gemini_review(parsed_diff, pr_number)
-
-    if gemini_review
-      message += "\n\n**AI Code Review:**\n#{gemini_review}"
-    end
+    message += "\n AI review will be posted shortly..."
 
     render json: { message: message }, status: :ok
   rescue => e
@@ -36,16 +47,6 @@ class WebhooksController < ApplicationController
   end
 
   private
-
-  def fetch_gemini_review(parsed_diff, pr_number)
-    return nil unless ENV['GEMINI_API_KEY']
-
-    gemini = GeminiService.new
-    gemini.code_review(parsed_diff, pr_number: pr_number)
-  rescue ArgumentError => e
-    Rails.logger.warn "Gemini service error: #{e.message}"
-    nil
-  end
 
   def parse_diff(diff_text)
     result = {}

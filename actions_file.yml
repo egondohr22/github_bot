@@ -54,11 +54,15 @@ jobs:
 
       - name: Send event to rails server
         id: send_to_server
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           COMMENT="${{ github.event.comment.body || github.event.review.body }}"
           PR_NUMBER="${{ github.event.issue.number || github.event.pull_request.number }}"
           BASE="${{ steps.pr.outputs.base }}"
           HEAD="${{ steps.pr.outputs.head }}"
+          OWNER="${{ github.repository_owner }}"
+          REPO="${{ github.event.repository.name }}"
 
           DIFF=$(git diff origin/$BASE...origin/$HEAD | head -n 500)
 
@@ -69,7 +73,9 @@ jobs:
             --arg head "$HEAD" \
             --arg comment "$COMMENT" \
             --arg diff "$DIFF" \
-            '{pr_number: $pr, base_branch: $base, head_branch: $head, comment: $comment, diff: $diff}')
+            --arg owner "$OWNER" \
+            --arg repo "$REPO" \
+            '{pr_number: $pr, base_branch: $base, head_branch: $head, comment: $comment, diff: $diff, owner: $owner, repo: $repo}')
 
           RESPONSE=$(curl -s -X POST "${{ secrets.WEBHOOK_URL }}" \
             -H "Content-Type: application/json" \
