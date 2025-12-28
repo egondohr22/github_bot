@@ -9,15 +9,12 @@ class GeminiReviewJob < ApplicationJob
   def perform(pr_data)
     Rails.logger.info "Starting Gemini review for PR ##{pr_data['pr_number']}"
 
-    # Parse the diff
     parsed_diff = parse_diff(pr_data['diff'])
     Rails.logger.info "Parsed #{parsed_diff.keys.count} files for review"
 
-    # Get Gemini review
     gemini_review = fetch_gemini_review(parsed_diff, pr_data['pr_number'])
 
     if gemini_review
-      # Post the review back to GitHub
       github_service = GitHubService.new
       github_service.post_comment(
         owner: pr_data['owner'],
