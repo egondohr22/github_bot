@@ -4,10 +4,12 @@ require 'json'
 class HttpService
   class RequestError < StandardError; end
 
-  def initialize
+  def initialize(read_timeout: 30, open_timeout: 10)
     @default_headers = {
       'Content-Type' => 'application/json'
     }
+    @read_timeout = read_timeout
+    @open_timeout = open_timeout
   end
 
   def get(url, headers: {})
@@ -53,8 +55,8 @@ class HttpService
   def build_http(uri)
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = uri.scheme == 'https'
-    http.read_timeout = 30
-    http.open_timeout = 10
+    http.read_timeout = @read_timeout
+    http.open_timeout = @open_timeout
     http
   end
 

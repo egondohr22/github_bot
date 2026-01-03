@@ -1,4 +1,4 @@
-require_relative '../../lib/gemini_service'
+require_relative '../../lib/agent_orchestrator'
 require_relative '../../lib/github_service'
 
 class GeminiReviewJob < ApplicationJob
@@ -7,22 +7,23 @@ class GeminiReviewJob < ApplicationJob
   retry_on StandardError, wait: :polynomially_longer, attempts: 3
 
   def perform(pr_data)
-    Rails.logger.info "Starting Gemini review for PR ##{pr_data['pr_number']}"
+    Rails.logger.info "Starting Agentic AI review for PR ##{pr_data['pr_number']}"
 
     parsed_diff = parse_diff(pr_data['diff'])
     Rails.logger.info "Parsed #{parsed_diff.keys.count} files for review"
 
-    gemini_review = fetch_gemini_review(parsed_diff, pr_data['pr_number'])
+    # Use the new agent orchestrator
+    agentic_review = fetch_agentic_review(parsed_diff, pr_data)
 
-    if gemini_review
+    if agentic_review
       github_service = GitHubService.new
       github_service.post_comment(
         owner: pr_data['owner'],
         repo: pr_data['repo'],
         pr_number: pr_data['pr_number'],
-        comment: format_review_comment(gemini_review)
+        comment: agentic_review
       )
-      Rails.logger.info "Posted Gemini review to PR ##{pr_data['pr_number']}"
+      Rails.logger.info "Posted Agentic AI review to PR ##{pr_data['pr_number']}"
     else
       Rails.logger.warn "No review generated for PR ##{pr_data['pr_number']}"
     end
@@ -34,13 +35,13 @@ class GeminiReviewJob < ApplicationJob
 
   private
 
-  def fetch_gemini_review(parsed_diff, pr_number)
+  def fetch_agentic_review(parsed_diff, pr_data)
     return nil unless ENV['GEMINI_API_KEY']
 
-    gemini = GeminiService.new
-    gemini.code_review(parsed_diff, pr_number: pr_number)
+    orchestrator = AgentOrchestrator.new
+    orchestrator.orchestrate_review(parsed_diff, pr_data)
   rescue ArgumentError => e
-    Rails.logger.warn "Gemini service error: #{e.message}"
+    Rails.logger.warn "Agent orchestrator error: #{e.message}"
     nil
   end
 
@@ -91,7 +92,4 @@ class GeminiReviewJob < ApplicationJob
     result
   end
 
-  def format_review_comment(review)
-    "## AI Code Review\n\n#{review}"
-  end
 end
