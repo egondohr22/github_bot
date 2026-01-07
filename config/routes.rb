@@ -7,6 +7,8 @@ Rails.application.routes.draw do
 
   post "webhooks/github", to: "webhooks#github"
 
+  get "test", to: "test#index"
+
   # Defines the root path route ("/")
   # root "posts#index"
 end
