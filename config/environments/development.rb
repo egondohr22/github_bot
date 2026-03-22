@@ -79,6 +79,4 @@ Rails.application.configure do
   config.logger = ActiveSupport::Logger.new(STDOUT)
   config.logger.level = Logger::DEBUG
 
-  # Also log Solid Queue events to STDOUT
-  config.solid_queue.logger = config.logger
 end

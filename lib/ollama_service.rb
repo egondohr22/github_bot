@@ -1,13 +1,12 @@
 require_relative 'http_service'
 
 class OllamaService
-  DEFAULT_MODEL = 'deepseek-coder:6.7b'
+  DEFAULT_MODEL = 'ministral-3:8b-instruct-2512-q8_0'
   API_BASE_URL = 'http://localhost:11434'
 
-  def initialize(base_url: nil)
+  def initialize(base_url: nil, read_timeout: 300)
     @base_url = base_url || ENV['OLLAMA_URL'] || API_BASE_URL
-    # Use longer timeout for local LLM inference (5 minutes read, 30 sec open)
-    @http_service = HttpService.new(read_timeout: 300, open_timeout: 30)
+    @http_service = HttpService.new(read_timeout: read_timeout, open_timeout: 30)
   end
 
   def generate(prompt, model: DEFAULT_MODEL, system: nil, temperature: 0.3)
