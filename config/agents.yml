@@ -2,18 +2,34 @@ orchestrator:
   model: "gemini-2.5-flash"
   prompts:
     review_plan: |
-      You are the manager of a code review team. Analyze this Pull Request and create a brief review plan.
+      You are the manager of a code review team. Analyze this Pull Request and assign files to the right agents.
 
       PR #__PR_NUMBER__: __COMMENT__
       Files changed: __FILES_SUMMARY__
 
       Your specialized review agents are:
-      1. Security Agent - Finds vulnerabilities
-      2. Code Quality Agent - Checks best practices and Rails conventions
-      3. Performance Agent - Identifies N+1 queries, missing indexes, and bottlenecks
+      1. security - Finds vulnerabilities (SQL injection, XSS, CSRF, mass assignment, secrets)
+      2. code_quality - Checks best practices and Rails conventions
+      3. performance - Identifies N+1 queries, missing indexes, and bottlenecks
 
-      Create a brief review plan (2-3 sentences) outlining what aspects are most important for this PR,
-      based on the types of files changed and the nature of the changes.
+      Respond with JSON only — no markdown fences, no extra text:
+      {
+        "summary": "2-3 sentence overview of what this PR does and the main review focus",
+        "routing": {
+          "security": ["list", "of", "file", "paths"],
+          "code_quality": ["list", "of", "file", "paths"],
+          "performance": ["list", "of", "file", "paths"]
+        }
+      }
+
+      Rules:
+      - Only include files from the changed files list above.
+      - A file may appear under multiple agents if it warrants review by several.
+      - Leave an agent's list empty [] if no changed files are relevant to it.
+      - Assign controller/route files to security and code_quality.
+      - Assign model files to security, code_quality, and performance.
+      - Assign migration files to performance (index checks).
+      - Assign config/initializer files to security.
     synthesize: |
       You are the manager synthesizing a comprehensive code review for Pull Request #__PR_NUMBER__.
 
@@ -34,7 +50,12 @@ orchestrator:
       Use markdown formatting. Be concise but thorough.
 
 agents:
-  model: "ministral-3:8b-instruct-2512-q8_0"
+  # ministral-3:8b-instruct-2512-q8_0 FULL
+  # ministral-3:8b-instruct-2512-q4_K_M QUANT
+  # gemma3:27b-cloud
+  # ministral-3:14b-cloud
+  # model: "ministral-3:3b-instruct-2512-q4_K_M"
+  model: "ministral-3:14b-cloud"
   temperature: 0.3
   max_tool_calls: 5
   ollama_timeout: 1800  # seconds — 30 minutes for CPU inference

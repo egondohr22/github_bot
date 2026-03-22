@@ -61,7 +61,7 @@ class GitHubService
     encoded_query = URI.encode_www_form_component("#{query} repo:#{owner}/#{repo}")
     url = "#{API_BASE_URL}/search/code?q=#{encoded_query}"
     response = @http_service.get(url, headers: auth_headers)
-
+    binding.pry
     if response[:success]
       items = response[:body]['items'] || []
       items.map { |item| { path: item['path'], name: item['name'] } }
