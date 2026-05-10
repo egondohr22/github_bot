@@ -1,5 +1,3 @@
-require_relative '../../lib/gemini_service'
-
 class WebhooksController < ApplicationController
   def github
     pr_number = params[:pr_number]
@@ -16,7 +14,7 @@ class WebhooksController < ApplicationController
     Rails.logger.info "Comment: #{comment}"
     Rails.logger.info "Diff lines: #{diff&.lines&.count || 0}"
 
-    parsed_diff = parse_diff(diff)
+    parsed_diff = DiffParser.parse(diff)
     Rails.logger.info "Parsed #{parsed_diff.keys.count} files"
 
     pr_data = {
@@ -46,61 +44,4 @@ class WebhooksController < ApplicationController
     render json: { error: e.message }, status: :internal_server_error
   end
 
-  private
-
-  def parse_diff(diff_text)
-    result = {}
-    current_file = nil
-    before_lines = []
-    after_lines = []
-    in_hunk = false
-
-    diff_text.each_line do |line|
-      # Match file header (e.g., "diff --git a/file.rb b/file.rb")
-      if line.start_with?('diff --git')
-        # Save previous file if exists
-        if current_file
-          result[current_file] = {
-            before: before_lines.join,
-            after: after_lines.join
-          }
-        end
-
-        # Extract filename (e.g., "a/Gemfile.lock" -> "Gemfile.lock")
-        match = line.match(%r{diff --git a/(.*?) b/(.*)})
-        current_file = match[2].strip if match
-        before_lines = []
-        after_lines = []
-        in_hunk = false
-
-      # Start of hunk (e.g., "@@ -386,7 +386,7 @@ GEM")
-      elsif line.start_with?('@@')
-        in_hunk = true
-
-      # Lines in the diff
-      elsif in_hunk
-        if line.start_with?('-') && !line.start_with?('---')
-          # Removed line (before)
-          before_lines << line[1..-1]
-        elsif line.start_with?('+') && !line.start_with?('+++')
-          # Added line (after)
-          after_lines << line[1..-1]
-        elsif line.start_with?(' ')
-          # Context line (appears in both)
-          before_lines << line[1..-1]
-          after_lines << line[1..-1]
-        end
-      end
-    end
-
-    # Save last file
-    if current_file
-      result[current_file] = {
-        before: before_lines.join,
-        after: after_lines.join
-      }
-    end
-
-    result
-  end
 end

@@ -58,7 +58,7 @@ agents:
   model: "ministral-3:14b-cloud"
   temperature: 0.3
   max_tool_calls: 5
-  ollama_timeout: 1800  # seconds — 30 minutes for CPU inference
+  ollama_timeout: 300
   tools_instruction: |
     You have access to these tools to investigate the code further before concluding:
 
