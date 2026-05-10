@@ -30,16 +30,23 @@ class BaseAgent < ApplicationService
     ]
 
     tool_calls_made = 0
-    started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
+    conv = open_conversation_log(context, agent_key, model)
+    conv_write(conv, "# PR \##{context['pr_number']} — #{self.class.name}\n\n")
+    conv_write(conv, "**Model:** #{model} | **Agent:** #{agent_key}\n\n---\n\n")
+    conv_write(conv, "## System\n\n#{system_message}\n\n---\n\n")
+    conv_write(conv, "## User\n\n#{initial_prompt(parsed_diff)}\n\n---\n\n")
 
     findings = loop do
       response_text = @ollama.chat(messages, model: model, temperature: temperature)
 
       unless response_text
+        conv_write(conv, "## ⚠️ No response from model\n\n")
         break "Agent failed to respond."
       end
 
       messages << { role: 'assistant', content: response_text }
+      conv_write(conv, "## Assistant\n\n#{response_text}\n\n---\n\n")
       parsed = parse_json_response(response_text)
 
       if parsed['done']
@@ -48,20 +55,24 @@ class BaseAgent < ApplicationService
 
       if parsed['tool_call'] && tool_calls_made < max_tool_calls
         tool_name   = parsed['tool_call']['name']
+        tool_args   = parsed['tool_call']['args'] || {}
         tool_result = execute_tool(parsed['tool_call'], context)
         tool_calls_made += 1
 
         log_info("#{self.class.name}: tool=#{tool_name} (#{tool_calls_made}/#{max_tool_calls})")
+        conv_write(conv, "## Tool Call \##{tool_calls_made}: `#{tool_name}`\n\n")
+        conv_write(conv, "**Args:** `#{tool_args.to_json}`\n\n**Result:**\n\n```\n#{tool_result}\n```\n\n---\n\n")
         messages << { role: 'user', content: "Tool result:\n#{tool_result}" }
       else
         break parsed['message'] || response_text
       end
     end
 
-    duration_ms = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - started_at) * 1000).round
-    log_info("#{self.class.name}: Done in #{duration_ms}ms, #{tool_calls_made} tool calls")
+    log_info("#{self.class.name}: Done — #{tool_calls_made} tool calls")
+    conv_write(conv, "## Summary\n\n**Tool calls:** #{tool_calls_made}\n\n### Findings\n\n#{findings}\n")
+    conv.close
 
-    { findings: findings, tool_calls: tool_calls_made, duration_ms: duration_ms }
+    { findings: findings, tool_calls: tool_calls_made }
   end
 
   private
@@ -98,6 +109,22 @@ class BaseAgent < ApplicationService
     end
   rescue => e
     "Tool execution error: #{e.message}"
+  end
+
+  def open_conversation_log(context, agent_key, model)
+    dir = Rails.root.join('log', 'conversations')
+    FileUtils.mkdir_p(dir)
+    pr  = context['pr_number']
+    ts  = Time.now.strftime('%Y%m%d_%H%M%S')
+    File.open(dir.join("pr#{pr}_#{agent_key}_#{ts}.md"), 'w')
+  rescue => e
+    log_error("#{self.class.name}: Could not open conversation log — #{e.message}")
+    nil
+  end
+
+  def conv_write(file, text)
+    file&.write(text)
+    file&.flush
   end
 
   def parse_json_response(text)
