@@ -41,4 +41,4 @@ plugin :tmp_restart
 pidfile ENV["PIDFILE"] if ENV["PIDFILE"]
 
 
-plugin :solid_queue if ENV["SOLID_QUEUE_IN_PUMA"] || Rails.env.development?
+plugin :solid_queue if ENV["SOLID_QUEUE_IN_PUMA"]
