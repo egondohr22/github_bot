@@ -1,0 +1,4 @@
+<% colors = { "pending" => "bg-gray-100 text-gray-600", "reviewing" => "bg-blue-100 text-blue-700", "done" => "bg-green-100 text-green-700", "failed" => "bg-red-100 text-red-700" } %>
+<span class="text-xs font-medium px-2 py-1 rounded-full <%= colors[status] || colors["pending"] %>">
+  <%= status %>
+</span>

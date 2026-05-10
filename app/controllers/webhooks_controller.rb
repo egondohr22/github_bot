@@ -1,4 +1,7 @@
 class WebhooksController < ApplicationController
+  skip_before_action :authenticate_user!
+  skip_before_action :verify_authenticity_token
+
   def github
     pr_number = params[:pr_number]
     base_branch = params[:base_branch]

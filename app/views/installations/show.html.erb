@@ -1,0 +1,48 @@
+<div class="max-w-lg mx-auto">
+  <div class="flex items-center gap-3 mb-6">
+    <%= link_to "← Repos", installations_path, class: "text-sm text-gray-500 hover:text-gray-700" %>
+  </div>
+
+  <h1 class="text-2xl font-bold mb-6"><%= @installation.repo %></h1>
+
+  <div class="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
+    <div class="px-5 py-4">
+      <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Webhook URL</div>
+      <div class="flex items-center gap-2" data-controller="copy">
+        <input type="text" readonly value="<%= webhooks_github_url %>"
+               data-copy-target="source"
+               class="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono text-gray-700 focus:outline-none" />
+        <button data-action="copy#copy" class="text-sm bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg transition">Copy</button>
+        <span data-copy-target="feedback" class="text-xs text-green-600 w-10"></span>
+      </div>
+      <p class="text-xs text-gray-400 mt-2">Set this as the Payload URL in your GitHub repo's webhook settings. Content type: <code>application/json</code>.</p>
+    </div>
+
+    <div class="px-5 py-4">
+      <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Webhook Secret</div>
+      <div class="flex items-center gap-2" data-controller="copy">
+        <input type="password" readonly value="<%= @installation.webhook_secret %>"
+               data-copy-target="source"
+               class="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono text-gray-700 focus:outline-none" />
+        <button data-action="copy#copy" class="text-sm bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg transition">Copy</button>
+        <span data-copy-target="feedback" class="text-xs text-green-600 w-10"></span>
+      </div>
+    </div>
+
+    <div class="px-5 py-4">
+      <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Owner</div>
+      <div class="text-sm"><%= @installation.owner %></div>
+    </div>
+
+    <div class="px-5 py-4">
+      <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Added</div>
+      <div class="text-sm"><%= @installation.created_at.strftime("%B %-d, %Y") %></div>
+    </div>
+  </div>
+
+  <div class="mt-6">
+    <%= button_to "Remove Repo", installation_path(@installation), method: :delete,
+          data: { turbo_confirm: "Remove #{@installation.repo}? This cannot be undone." },
+          class: "text-sm text-red-500 hover:text-red-700 bg-transparent border-0 cursor-pointer" %>
+  </div>
+</div>

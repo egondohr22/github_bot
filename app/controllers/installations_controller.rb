@@ -1,0 +1,37 @@
+class InstallationsController < ApplicationController
+  before_action :set_installation, only: [:show, :destroy]
+
+  def index
+    @installations = current_user.installations.order(created_at: :desc)
+  end
+
+  def new
+    @installation = current_user.installations.build
+  end
+
+  def create
+    @installation = current_user.installations.build(installation_params)
+    if @installation.save
+      redirect_to @installation, notice: "Repo added successfully."
+    else
+      render :new, status: :unprocessable_entity
+    end
+  end
+
+  def show; end
+
+  def destroy
+    @installation.destroy
+    redirect_to installations_path, notice: "Repo removed."
+  end
+
+  private
+
+  def set_installation
+    @installation = current_user.installations.find(params[:id])
+  end
+
+  def installation_params
+    params.require(:installation).permit(:owner, :repo, :webhook_secret)
+  end
+end

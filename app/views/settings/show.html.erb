@@ -1,0 +1,18 @@
+<div class="max-w-lg mx-auto">
+  <h1 class="text-2xl font-bold mb-6">Settings</h1>
+
+  <div class="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100 mb-6">
+    <div class="px-5 py-4">
+      <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">GitHub Account</div>
+      <div class="text-sm font-medium"><%= current_user.github_username %></div>
+      <% if current_user.name.present? %>
+        <div class="text-xs text-gray-400"><%= current_user.name %></div>
+      <% end %>
+    </div>
+    <div class="px-5 py-4">
+      <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Email</div>
+      <div class="text-sm"><%= current_user.email %></div>
+    </div>
+  </div>
+
+</div>
