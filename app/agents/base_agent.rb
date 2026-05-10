@@ -111,22 +111,6 @@ class BaseAgent < ApplicationService
     "Tool execution error: #{e.message}"
   end
 
-  def open_conversation_log(context, agent_key, model)
-    dir = Rails.root.join('log', 'conversations')
-    FileUtils.mkdir_p(dir)
-    pr  = context['pr_number']
-    ts  = Time.now.strftime('%Y%m%d_%H%M%S')
-    File.open(dir.join("pr#{pr}_#{agent_key}_#{ts}.md"), 'w')
-  rescue => e
-    log_error("#{self.class.name}: Could not open conversation log — #{e.message}")
-    nil
-  end
-
-  def conv_write(file, text)
-    file&.write(text)
-    file&.flush
-  end
-
   def parse_json_response(text)
     JSON.parse(text.strip.gsub(/\A```(?:json)?\s*|\s*```\z/, ''))
   rescue JSON::ParserError

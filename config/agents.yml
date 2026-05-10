@@ -4,11 +4,12 @@ orchestrator:
     review_plan: |
       You are the manager of a code review team. Analyze this Pull Request and assign files to the right agents.
 
-      PR #__PR_NUMBER__: __COMMENT__
+      PR #__PR_NUMBER__
+      USER COMMENT: __COMMENT__
       Files changed: __FILES_SUMMARY__
 
       Your specialized review agents are:
-      1. security - Finds vulnerabilities (SQL injection, XSS, CSRF, mass assignment, secrets)
+      1. security - Finds vulnerabilities (SQL injection, XSS, authorization, mass assignment, secrets)
       2. code_quality - Checks best practices and Rails conventions
       3. performance - Identifies N+1 queries, missing indexes, and bottlenecks
 
@@ -26,10 +27,10 @@ orchestrator:
       - Only include files from the changed files list above.
       - A file may appear under multiple agents if it warrants review by several.
       - Leave an agent's list empty [] if no changed files are relevant to it.
-      - Assign controller/route files to security and code_quality.
-      - Assign model files to security, code_quality, and performance.
       - Assign migration files to performance (index checks).
       - Assign config/initializer files to security.
+      - Don't over assing, running agents is expensive
+      - Prioritize USER COMMENT over anything else. If USER tells that he needs only a security review, than only assing files to security agent. If USER says to run all files through code quality agent, then assing all files to code quality agent
     synthesize: |
       You are the manager synthesizing a comprehensive code review for Pull Request #__PR_NUMBER__.
 
@@ -89,7 +90,6 @@ agents:
       Focus on:
       - SQL injection vulnerabilities
       - Cross-Site Scripting (XSS) risks
-      - CSRF token issues
       - Mass assignment vulnerabilities (strong parameters)
       - Authentication/Authorization bypasses
       - Unsafe redirects or file operations

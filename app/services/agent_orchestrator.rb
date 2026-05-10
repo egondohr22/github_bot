@@ -32,7 +32,7 @@ class AgentOrchestrator < ApplicationService
       .gsub('__COMMENT__',      pr_data['comment'])
       .gsub('__FILES_SUMMARY__', parsed_diff.keys.join(', '))
 
-    raw  = @gemini.generate_content(prompt, model: @config.dig('orchestrator', 'model'))
+    raw  = @gemini.generate_content(prompt, model: @config.dig('orchestrator', 'model'), context: pr_data, agent_key: 'orchestrator_plan')
     plan = parse_routing_plan(raw, parsed_diff.keys)
 
     log_info("AgentOrchestrator: Routing — #{plan[:routing].map { |k, v| "#{k}:#{v.size}" }.join(', ')}")
@@ -89,7 +89,7 @@ class AgentOrchestrator < ApplicationService
       .gsub('__REVIEW_PLAN__',    review_plan_summary.to_s)
       .gsub('__AGENT_FINDINGS__', agent_findings)
 
-    @gemini.generate_content(prompt, model: @config.dig('orchestrator', 'model')) ||
+    @gemini.generate_content(prompt, model: @config.dig('orchestrator', 'model'), context: pr_data, agent_key: 'orchestrator_synthesize') ||
       format_fallback_review(agent_results, pr_data)
   end
 
