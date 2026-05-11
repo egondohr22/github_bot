@@ -1,6 +1,6 @@
 class GeminiService < ApplicationService
-  API_KEY       = ENV['GEMINI_API_KEY']
-  API_BASE_URL  = ENV['GEMINI_API_BASE_URL']
+  API_KEY = ENV['GEMINI_API_KEY']
+  API_BASE_URL = ENV['GEMINI_API_BASE_URL']
   DEFAULT_MODEL = ENV['GEMINI_MODEL']
 
   def initialize
@@ -13,8 +13,8 @@ class GeminiService < ApplicationService
     conv_write(conv, "**Model:** #{model}\n\n---\n\n")
     conv_write(conv, "## Prompt\n\n#{prompt}\n\n---\n\n")
 
-    url      = "#{API_BASE_URL}/models/#{model}:generateContent?key=#{API_KEY}"
-    body     = { contents: [{ parts: [{ text: prompt }] }] }
+    url = "#{API_BASE_URL}/models/#{model}:generateContent?key=#{API_KEY}"
+    body = { contents: [{ parts: [{ text: prompt }] }] }
     response = @http.post(url, body: body)
 
     if response[:success]

@@ -7,9 +7,9 @@ class OllamaService < ApplicationService
 
   def generate(prompt, model:, system: nil, temperature: 0.3)
     body = {
-      model:   model,
-      prompt:  prompt,
-      stream:  false,
+      model: model,
+      prompt: prompt,
+      stream: false,
       options: { temperature: temperature, num_predict: 2000 }
     }
     body[:system] = system if system
@@ -28,10 +28,10 @@ class OllamaService < ApplicationService
 
   def chat(messages, model:, temperature: 0.3)
     body = {
-      model:    model,
+      model: model,
       messages: messages,
-      stream:   false,
-      options:  { temperature: temperature, num_predict: 2000 }
+      stream: false,
+      options: { temperature: temperature, num_predict: 2000 }
     }
 
     response = @http.post("#{API_BASE_URL}/api/chat", body: body)

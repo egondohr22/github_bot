@@ -7,13 +7,16 @@ class InstallationsController < ApplicationController
 
   def new
     @installation = current_user.installations.build
+    @repos = GithubService.new(token: current_user.github_token).list_repos
   end
 
   def create
     @installation = current_user.installations.build(installation_params)
+    @installation.owner ||= @installation.repo.to_s.split("/").first
     if @installation.save
       redirect_to @installation, notice: "Repo added successfully."
     else
+      @repos = GithubService.new(token: current_user.github_token).list_repos
       render :new, status: :unprocessable_entity
     end
   end
@@ -32,6 +35,6 @@ class InstallationsController < ApplicationController
   end
 
   def installation_params
-    params.require(:installation).permit(:owner, :repo, :webhook_secret)
+    params.require(:installation).permit(:owner, :repo)
   end
 end

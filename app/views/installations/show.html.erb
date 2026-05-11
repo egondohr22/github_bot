@@ -15,7 +15,7 @@
         <button data-action="copy#copy" class="text-sm bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg transition">Copy</button>
         <span data-copy-target="feedback" class="text-xs text-green-600 w-10"></span>
       </div>
-      <p class="text-xs text-gray-400 mt-2">Set this as the Payload URL in your GitHub repo's webhook settings. Content type: <code>application/json</code>.</p>
+      <p class="text-xs text-gray-400 mt-2">Add this as <code>WEBHOOK_URL</code> in your GitHub repo under <strong>Settings → Secrets and variables → Actions</strong>.</p>
     </div>
 
     <div class="px-5 py-4">
@@ -27,6 +27,7 @@
         <button data-action="copy#copy" class="text-sm bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg transition">Copy</button>
         <span data-copy-target="feedback" class="text-xs text-green-600 w-10"></span>
       </div>
+      <p class="text-xs text-gray-400 mt-2">Add this as <code>WEBHOOK_SECRET</code> in the same place. The Actions workflow uses it to sign payloads — your app uses it to verify them.</p>
     </div>
 
     <div class="px-5 py-4">

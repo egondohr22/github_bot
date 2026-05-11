@@ -2,10 +2,10 @@ class BaseAgent < ApplicationService
   CONFIG_PATH = Rails.root.join('config', 'agents.yml')
 
   def initialize(github_service: nil)
-    @config  = YAML.safe_load_file(CONFIG_PATH)
-    timeout  = @config.dig('agents', 'ollama_timeout')
-    @ollama  = OllamaService.new(read_timeout: timeout)
-    @github  = github_service
+    @config = YAML.safe_load_file(CONFIG_PATH)
+    timeout = @config.dig('agents', 'ollama_timeout')
+    @ollama = OllamaService.new(read_timeout: timeout)
+    @github = github_service
   end
 
   def review(parsed_diff, context = {})
@@ -15,18 +15,18 @@ class BaseAgent < ApplicationService
   protected
 
   def run_agentic_loop(parsed_diff, context, agent_key)
-    agent_cfg         = @config.dig('agents', agent_key.to_s)
+    agent_cfg = @config.dig('agents', agent_key.to_s)
     tools_instruction = @config.dig('agents', 'tools_instruction').strip
-    system_message    = "#{agent_cfg['system_prompt'].strip}\n\n#{tools_instruction}"
-    model             = @config.dig('agents', 'model')
-    temperature       = @config.dig('agents', 'temperature')
-    max_tool_calls    = @config.dig('agents', 'max_tool_calls')
+    system_message = "#{agent_cfg['system_prompt'].strip}\n\n#{tools_instruction}"
+    model = @config.dig('agents', 'model')
+    temperature = @config.dig('agents', 'temperature')
+    max_tool_calls = @config.dig('agents', 'max_tool_calls')
 
     log_info("#{self.class.name}: Starting review with model=#{model}")
 
     messages = [
       { role: 'system', content: system_message },
-      { role: 'user',   content: initial_prompt(parsed_diff) }
+      { role: 'user', content: initial_prompt(parsed_diff) }
     ]
 
     tool_calls_made = 0
@@ -54,8 +54,8 @@ class BaseAgent < ApplicationService
       end
 
       if parsed['tool_call'] && tool_calls_made < max_tool_calls
-        tool_name   = parsed['tool_call']['name']
-        tool_args   = parsed['tool_call']['args'] || {}
+        tool_name = parsed['tool_call']['name']
+        tool_args = parsed['tool_call']['args'] || {}
         tool_result = execute_tool(parsed['tool_call'], context)
         tool_calls_made += 1
 
@@ -88,11 +88,11 @@ class BaseAgent < ApplicationService
   end
 
   def execute_tool(tool_call, context)
-    name  = tool_call['name']
-    args  = tool_call['args'] || {}
+    name = tool_call['name']
+    args = tool_call['args'] || {}
     owner = context['owner']
-    repo  = context['repo']
-    ref   = context['head_branch']
+    repo = context['repo']
+    ref = context['head_branch']
 
     case name
     when 'get_file'

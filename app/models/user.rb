@@ -12,9 +12,9 @@ class User < ApplicationRecord
     find_or_initialize_by(uid: auth.uid).tap do |user|
       user.email           = auth.info.email
       user.github_username = auth.info.nickname
-      user.name            = auth.info.name
-      user.github_token    = auth.credentials.token
-      user.password        = Devise.friendly_token[0, 20] if user.new_record?
+      user.name = auth.info.name
+      user.github_token = auth.credentials.token
+      user.password = Devise.friendly_token[0, 20] if user.new_record?
       user.save!
     end
   end

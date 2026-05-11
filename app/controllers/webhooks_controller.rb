@@ -1,50 +1,56 @@
 class WebhooksController < ApplicationController
   skip_before_action :authenticate_user!
   skip_before_action :verify_authenticity_token
+  before_action :verify_signature!
 
   def github
-    pr_number = params[:pr_number]
-    base_branch = params[:base_branch]
-    head_branch = params[:head_branch]
-    comment = params[:comment]
-    diff = params[:diff]
-    owner = params[:owner]
-    repo = params[:repo]
+    pr = find_or_create_pr(@installation, @payload)
+    review = pr.reviews.create!(
+      triggered_by_comment: @payload['comment'],
+      raw_diff: @payload['diff'],
+      status: 'pending'
+    )
 
-    Rails.logger.info "Received GitHub webhook: PR ##{pr_number}"
-    Rails.logger.info "Repository: #{owner}/#{repo}"
-    Rails.logger.info "Branches: #{base_branch}...#{head_branch}"
-    Rails.logger.info "Comment: #{comment}"
-    Rails.logger.info "Diff lines: #{diff&.lines&.count || 0}"
-
-    parsed_diff = DiffParser.parse(diff)
-    Rails.logger.info "Parsed #{parsed_diff.keys.count} files"
-
-    pr_data = {
-      'pr_number' => pr_number,
-      'base_branch' => base_branch,
-      'head_branch' => head_branch,
-      'comment' => comment,
-      'diff' => diff,
-      'owner' => owner,
-      'repo' => repo
-    }
-
-    GeminiReviewJob.perform_later(pr_data)
-    Rails.logger.info "Enqueued GeminiReviewJob for PR ##{pr_number}"
-
-    message = "I'm processing your request for PR ##{pr_number}.\n\n"
-    message += "**Files changed:**\n"
-    parsed_diff.keys.each do |file|
-      message += "- `#{file}`\n"
-    end
-    message += "\n AI review will be posted shortly..."
-
-    render json: { message: message }, status: :ok
-  rescue => e
-    Rails.logger.error "Error processing webhook: #{e.message}"
-    Rails.logger.error e.backtrace.join("\n")
-    render json: { error: e.message }, status: :internal_server_error
+    GeminiReviewJob.perform_later(review.id)
+    head :ok
+  rescue ActiveRecord::RecordNotFound
+    head :not_found
+  rescue JSON::ParserError
+    head :unprocessable_entity
   end
 
+  private
+
+  def verify_signature!
+    @raw_body = request.body.read
+    request.body.rewind
+
+    @payload = JSON.parse(@raw_body)
+
+    @installation = Installation.find_by(
+      owner: @payload['owner'],
+      repo:  @payload['repo']
+    )
+    return head :unauthorized unless @installation
+
+    signature = request.headers['X-Hub-Signature-256'].to_s
+    return head :unauthorized if signature.blank?
+
+    expected = "sha256=#{OpenSSL::HMAC.hexdigest('SHA256', @installation.webhook_secret, @raw_body)}"
+    head :unauthorized unless ActiveSupport::SecurityUtils.secure_compare(expected, signature)
+  rescue JSON::ParserError
+    head :unprocessable_entity
+  end
+
+  def find_or_create_pr(installation, payload)
+    installation.pull_requests.find_or_create_by!(
+      github_pr_number: payload['pr_number'].to_i,
+      repo: payload['repo']
+    ) do |pr|
+      pr.head_branch = payload['head_branch']
+      pr.base_branch = payload['base_branch']
+      pr.author = payload['author']
+      pr.status = 'pending'
+    end
+  end
 end

@@ -1,10 +1,10 @@
 require 'base64'
 
 class GithubService < ApplicationService
-  TOKEN        = ENV['GITHUB_TOKEN']
   API_BASE_URL = ENV['GITHUB_API_BASE_URL']
 
-  def initialize
+  def initialize(token:)
+    @token = token
     @http = HttpService.new
   end
 
@@ -13,6 +13,19 @@ class GithubService < ApplicationService
     unless ActiveSupport::SecurityUtils.secure_compare(expected, signature.to_s)
       raise SecurityError, "Invalid webhook signature"
     end
+  end
+
+  def list_repos
+    response = with_retry { @http.get("#{API_BASE_URL}/user/repos?per_page=100&sort=updated", headers: auth_headers) }
+    if response[:success]
+      response[:body].map { |r| r['full_name'] }
+    else
+      log_error("Failed to list repos: #{response[:status]}")
+      []
+    end
+  rescue HttpService::RequestError => e
+    log_error("GitHub API request failed: #{e.message}")
+    []
   end
 
   def post_comment(owner:, repo:, pr_number:, comment:)
@@ -80,7 +93,7 @@ class GithubService < ApplicationService
 
   def auth_headers
     {
-      'Authorization' => "token #{TOKEN}",
+      'Authorization' => "token #{@token}",
       'Accept'        => 'application/vnd.github.v3+json'
     }
   end

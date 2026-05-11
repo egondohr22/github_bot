@@ -57,9 +57,9 @@ class HttpService
   def execute_request(http, request)
     response = http.request(request)
     {
-      success:  response.is_a?(Net::HTTPSuccess),
-      status:   response.code.to_i,
-      body:     parse_response_body(response),
+      success: response.is_a?(Net::HTTPSuccess),
+      status: response.code.to_i,
+      body: parse_response_body(response),
       raw_body: response.body,
       headers:  response.to_hash
     }

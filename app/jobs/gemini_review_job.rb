@@ -1,45 +1,29 @@
 class GeminiReviewJob < ApplicationJob
   queue_as :default
-
   retry_on StandardError, wait: :polynomially_longer, attempts: 3
 
-  def perform(pr_data)
-    Rails.logger.info "Starting Agentic AI review for PR ##{pr_data['pr_number']}"
+  def perform(review_id)
+    review = Review.find(review_id)
+    pr = review.pull_request
+    token = pr.installation.github_token
+    pr_data = pr.as_context_hash.merge('comment' => review.triggered_by_comment)
 
-    parsed_diff = DiffParser.parse(pr_data['diff'])
-    Rails.logger.info "Parsed #{parsed_diff.keys.count} files for review"
+    review.update!(status: 'reviewing')
 
-    # Use the new agent orchestrator
-    agentic_review = fetch_agentic_review(parsed_diff, pr_data)
+    parsed_diff = DiffParser.parse(review.raw_diff)
+    final_comment = AgentOrchestrator.new.orchestrate_review(parsed_diff, pr_data, github_token: token)
 
-    if agentic_review
-      github_service = GithubService.new
-      github_service.post_comment(
-        owner: pr_data['owner'],
-        repo: pr_data['repo'],
-        pr_number: pr_data['pr_number'],
-        comment: agentic_review
-      )
-      Rails.logger.info "Posted Agentic AI review to PR ##{pr_data['pr_number']}"
-    else
-      Rails.logger.warn "No review generated for PR ##{pr_data['pr_number']}"
-    end
+    GithubService.new(token: token).post_comment(
+      owner: pr_data['owner'],
+      repo: pr_data['repo'],
+      pr_number: pr_data['pr_number'],
+      comment: final_comment
+    )
+
+    review.update!(status: 'done', final_comment: final_comment, posted_at: Time.current)
+    pr.update!(status: 'done')
   rescue => e
-    Rails.logger.error "Error in GeminiReviewJob: #{e.message}"
-    Rails.logger.error e.backtrace.join("\n")
+    review&.update!(status: 'failed')
     raise
   end
-
-  private
-
-  def fetch_agentic_review(parsed_diff, pr_data)
-    return nil unless ENV['GEMINI_API_KEY']
-
-    orchestrator = AgentOrchestrator.new
-    orchestrator.orchestrate_review(parsed_diff, pr_data)
-  rescue ArgumentError => e
-    Rails.logger.warn "Agent orchestrator error: #{e.message}"
-    nil
-  end
-
 end

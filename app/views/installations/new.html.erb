@@ -11,23 +11,16 @@
     <% end %>
 
     <div>
-      <%= f.label :owner, "Owner", class: "block text-sm font-medium text-gray-700 mb-1" %>
-      <%= f.text_field :owner, placeholder: "e.g. myorg or myusername",
-            class: "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400" %>
-    </div>
-
-    <div>
-      <%= f.label :repo, "Repo", class: "block text-sm font-medium text-gray-700 mb-1" %>
-      <%= f.text_field :repo, placeholder: "e.g. myorg/myrepo",
-            class: "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400" %>
-      <p class="text-xs text-gray-400 mt-1">Full name including owner, e.g. <code>myorg/myrepo</code></p>
-    </div>
-
-    <div>
-      <%= f.label :webhook_secret, "Webhook Secret", class: "block text-sm font-medium text-gray-700 mb-1" %>
-      <%= f.text_field :webhook_secret, placeholder: "A secret string you'll use in GitHub",
-            class: "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400" %>
-      <p class="text-xs text-gray-400 mt-1">Set the same value in your GitHub repo's webhook settings.</p>
+      <%= f.label :repo, "Repository", class: "block text-sm font-medium text-gray-700 mb-1" %>
+      <% if @repos.any? %>
+        <%= f.select :repo, @repos,
+              { include_blank: "Select a repository…" },
+              class: "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400" %>
+      <% else %>
+        <%= f.text_field :repo, placeholder: "e.g. myorg/myrepo",
+              class: "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400" %>
+        <p class="text-xs text-gray-400 mt-1">Could not load repos — enter manually.</p>
+      <% end %>
     </div>
 
     <div class="flex gap-3 pt-2">

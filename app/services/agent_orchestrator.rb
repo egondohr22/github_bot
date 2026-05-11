@@ -2,9 +2,9 @@ class AgentOrchestrator < ApplicationService
   CONFIG_PATH = Rails.root.join('config', 'agents.yml')
 
   AGENT_CLASSES = {
-    'security'     => SecurityAgent,
+    'security' => SecurityAgent,
     'code_quality' => CodeQualityAgent,
-    'performance'  => PerformanceAgent
+    'performance' => PerformanceAgent
   }.freeze
 
   def initialize
@@ -12,12 +12,12 @@ class AgentOrchestrator < ApplicationService
     @gemini = GeminiService.new
   end
 
-  def orchestrate_review(parsed_diff, pr_data)
+  def orchestrate_review(parsed_diff, pr_data, github_token:)
     log_info("AgentOrchestrator: Starting review for PR ##{pr_data['pr_number']}")
 
-    routing_plan  = create_review_plan(parsed_diff, pr_data)
-    agent_results = execute_agents_with_routing(parsed_diff, pr_data, routing_plan[:routing])
-    final_review  = synthesize_review(pr_data, agent_results, routing_plan[:summary])
+    routing_plan = create_review_plan(parsed_diff, pr_data)
+    agent_results = execute_agents_with_routing(parsed_diff, pr_data, routing_plan[:routing], github_token)
+    final_review = synthesize_review(pr_data, agent_results, routing_plan[:summary])
 
     log_info("AgentOrchestrator: Review complete for PR ##{pr_data['pr_number']}")
     final_review
@@ -28,11 +28,11 @@ class AgentOrchestrator < ApplicationService
   def create_review_plan(parsed_diff, pr_data)
     log_info("AgentOrchestrator: Building routing plan")
     prompt = @config.dig('orchestrator', 'prompts', 'review_plan')
-      .gsub('__PR_NUMBER__',    pr_data['pr_number'].to_s)
-      .gsub('__COMMENT__',      pr_data['comment'])
+      .gsub('__PR_NUMBER__', pr_data['pr_number'].to_s)
+      .gsub('__COMMENT__', pr_data['comment'])
       .gsub('__FILES_SUMMARY__', parsed_diff.keys.join(', '))
 
-    raw  = @gemini.generate_content(prompt, model: @config.dig('orchestrator', 'model'), context: pr_data, agent_key: 'orchestrator_plan')
+    raw = @gemini.generate_content(prompt, model: @config.dig('orchestrator', 'model'), context: pr_data, agent_key: 'orchestrator_plan')
     plan = parse_routing_plan(raw, parsed_diff.keys)
 
     log_info("AgentOrchestrator: Routing — #{plan[:routing].map { |k, v| "#{k}:#{v.size}" }.join(', ')}")
@@ -42,7 +42,7 @@ class AgentOrchestrator < ApplicationService
   def parse_routing_plan(raw, all_files)
     return fallback_routing(all_files) unless raw
 
-    clean  = raw.strip.gsub(/\A```(?:json)?\s*|\s*```\z/, '')
+    clean = raw.strip.gsub(/\A```(?:json)?\s*|\s*```\z/, '')
     parsed = JSON.parse(clean)
 
     routing = AGENT_CLASSES.keys.each_with_object({}) do |key, h|
@@ -62,8 +62,8 @@ class AgentOrchestrator < ApplicationService
     }
   end
 
-  def execute_agents_with_routing(parsed_diff, pr_data, routing)
-    github = build_github_service
+  def execute_agents_with_routing(parsed_diff, pr_data, routing, github_token)
+    github = GithubService.new(token: github_token)
 
     AGENT_CLASSES.filter_map do |key, agent_class|
       files = routing[key] || []
@@ -85,8 +85,8 @@ class AgentOrchestrator < ApplicationService
     end.join("\n\n")
 
     prompt = @config.dig('orchestrator', 'prompts', 'synthesize')
-      .gsub('__PR_NUMBER__',      pr_data['pr_number'].to_s)
-      .gsub('__REVIEW_PLAN__',    review_plan_summary.to_s)
+      .gsub('__PR_NUMBER__', pr_data['pr_number'].to_s)
+      .gsub('__REVIEW_PLAN__', review_plan_summary.to_s)
       .gsub('__AGENT_FINDINGS__', agent_findings)
 
     @gemini.generate_content(prompt, model: @config.dig('orchestrator', 'model'), context: pr_data, agent_key: 'orchestrator_synthesize') ||
@@ -99,10 +99,4 @@ class AgentOrchestrator < ApplicationService
     lines.join("\n") + "\n---\n*Reviewed by AI Agent System*"
   end
 
-  def build_github_service
-    GithubService.new
-  rescue ArgumentError => e
-    log_error("AgentOrchestrator: GitHub service unavailable — #{e.message}. Tool calls will return empty results.")
-    nil
-  end
 end

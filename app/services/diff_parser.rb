@@ -3,8 +3,8 @@ class DiffParser
     result = {}
     current_file = nil
     before_lines = []
-    after_lines  = []
-    in_hunk      = false
+    after_lines = []
+    in_hunk = false
 
     diff_text.to_s.each_line do |line|
       if line.start_with?('diff --git')
@@ -14,8 +14,8 @@ class DiffParser
       elsif line.start_with?('@@')
         in_hunk = true
       elsif in_hunk
-        if    line.start_with?('-') && !line.start_with?('---') then before_lines << line[1..]
-        elsif line.start_with?('+') && !line.start_with?('+++') then after_lines  << line[1..]
+        if line.start_with?('-') && !line.start_with?('---') then before_lines << line[1..]
+        elsif line.start_with?('+') && !line.start_with?('+++') then after_lines << line[1..]
         elsif line.start_with?(' ')
           before_lines << line[1..]
           after_lines  << line[1..]
