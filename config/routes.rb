@@ -5,7 +5,9 @@ Rails.application.routes.draw do
 
   get  "dashboard", to: "dashboard#index", as: :dashboard
   resources :installations, only: [:index, :new, :create, :show, :destroy]
-  resource  :settings,      only: [:show, :update]
+  resources :pull_requests, only: [:show]
+  resources :reviews, only: [:show]
+  resource  :settings, only: [:show, :update]
 
   post "webhooks/github", to: "webhooks#github"
 
