@@ -12,11 +12,11 @@ class AgentOrchestrator < ApplicationService
     @gemini = GeminiService.new
   end
 
-  def orchestrate_review(parsed_diff, pr_data, github_token:)
+  def orchestrate_review(parsed_diff, pr_data, github_token:, repo_cloner: nil)
     log_info("AgentOrchestrator: Starting review for PR ##{pr_data['pr_number']}")
 
     routing_plan = create_review_plan(parsed_diff, pr_data)
-    agent_results = execute_agents_with_routing(parsed_diff, pr_data, routing_plan[:routing], github_token)
+    agent_results = execute_agents_with_routing(parsed_diff, pr_data, routing_plan[:routing], github_token, repo_cloner)
     final_review = synthesize_review(pr_data, agent_results, routing_plan[:summary])
 
     log_info("AgentOrchestrator: Review complete for PR ##{pr_data['pr_number']}")
@@ -62,7 +62,7 @@ class AgentOrchestrator < ApplicationService
     }
   end
 
-  def execute_agents_with_routing(parsed_diff, pr_data, routing, github_token)
+  def execute_agents_with_routing(parsed_diff, pr_data, routing, github_token, repo_cloner)
     github = GithubService.new(token: github_token)
 
     AGENT_CLASSES.filter_map do |key, agent_class|
@@ -70,7 +70,7 @@ class AgentOrchestrator < ApplicationService
       next if files.empty?
 
       log_info("AgentOrchestrator: Running #{key} agent on #{files.size} file(s)")
-      agent_class.new(github_service: github).review(parsed_diff.slice(*files), pr_data)
+      agent_class.new(github_service: github, repo_cloner: repo_cloner).review(parsed_diff.slice(*files), pr_data)
     rescue => e
       log_error("AgentOrchestrator: #{agent_class.name} failed — #{e.message}")
       { agent: key, findings: "Review failed: #{e.message}", priority: 'error', tool_calls: 0, duration_ms: 0 }

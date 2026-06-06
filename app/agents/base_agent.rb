@@ -1,11 +1,12 @@
 class BaseAgent < ApplicationService
   CONFIG_PATH = Rails.root.join('config', 'agents.yml')
 
-  def initialize(github_service: nil)
+  def initialize(github_service: nil, repo_cloner: nil)
     @config = YAML.safe_load_file(CONFIG_PATH)
     timeout = @config.dig('agents', 'ollama_timeout')
     @ollama = OllamaService.new(read_timeout: timeout)
     @github = github_service
+    @cloner = repo_cloner
   end
 
   def review(parsed_diff, context = {})
@@ -24,9 +25,10 @@ class BaseAgent < ApplicationService
 
     log_info("#{self.class.name}: Starting review with model=#{model}")
 
+    user_prompt = initial_prompt(parsed_diff, max_tool_calls)
     messages = [
       { role: 'system', content: system_message },
-      { role: 'user', content: initial_prompt(parsed_diff) }
+      { role: 'user', content: user_prompt }
     ]
 
     tool_calls_made = 0
@@ -35,13 +37,13 @@ class BaseAgent < ApplicationService
     conv_write(conv, "# PR \##{context['pr_number']} — #{self.class.name}\n\n")
     conv_write(conv, "**Model:** #{model} | **Agent:** #{agent_key}\n\n---\n\n")
     conv_write(conv, "## System\n\n#{system_message}\n\n---\n\n")
-    conv_write(conv, "## User\n\n#{initial_prompt(parsed_diff)}\n\n---\n\n")
+    conv_write(conv, "## User\n\n#{user_prompt}\n\n---\n\n")
 
     findings = loop do
       response_text = @ollama.chat(messages, model: model, temperature: temperature)
 
       unless response_text
-        conv_write(conv, "## ⚠️ No response from model\n\n")
+        conv_write(conv, "## No response from model\n\n")
         break "Agent failed to respond."
       end
 
@@ -62,7 +64,8 @@ class BaseAgent < ApplicationService
         log_info("#{self.class.name}: tool=#{tool_name} (#{tool_calls_made}/#{max_tool_calls})")
         conv_write(conv, "## Tool Call \##{tool_calls_made}: `#{tool_name}`\n\n")
         conv_write(conv, "**Args:** `#{tool_args.to_json}`\n\n**Result:**\n\n```\n#{tool_result}\n```\n\n---\n\n")
-        messages << { role: 'user', content: "Tool result:\n#{tool_result}" }
+        remaining = max_tool_calls - tool_calls_made
+        messages << { role: 'user', content: "Tool result:\n#{tool_result}\n\n(#{remaining} tool calls remaining)" }
       else
         break parsed['message'] || response_text
       end
@@ -77,13 +80,13 @@ class BaseAgent < ApplicationService
 
   private
 
-  def initial_prompt(parsed_diff)
+  def initial_prompt(parsed_diff, max_tool_calls)
     <<~PROMPT
       Review the following code diff:
 
       #{format_diff_for_prompt(parsed_diff)}
 
-      Respond with JSON only.
+      You have #{max_tool_calls} tool calls available. Respond with JSON only.
     PROMPT
   end
 
@@ -98,12 +101,21 @@ class BaseAgent < ApplicationService
     when 'get_file'
       path = args['path']
       return "Missing 'path' argument." unless path
-      @github&.get_file_content(owner: owner, repo: repo, path: path, ref: ref) || "File not found: #{path}"
+      if @cloner&.cloned?
+        @cloner.get_file(path) || "File not found: #{path}"
+      else
+        @github&.get_file_content(owner: owner, repo: repo, path: path, ref: ref) || "File not found: #{path}"
+      end
     when 'search_codebase'
       query = args['query']
       return "Missing 'query' argument." unless query
-      results = @github&.search_code(owner: owner, repo: repo, query: query) || []
-      results.empty? ? "No results found for: #{query}" : results.map { |r| r[:path] }.join("\n")
+      if @cloner&.cloned?
+        results = @cloner.search(query)
+        results.empty? ? "No results for: #{query}" : results.map { |r| "#{r[:path]}:#{r[:line]}: #{r[:content]}" }.join("\n")
+      else
+        results = @github&.search_code(owner: owner, repo: repo, query: query) || []
+        results.empty? ? "No results found for: #{query}" : results.map { |r| r[:path] }.join("\n")
+      end
     else
       "Unknown tool: #{name}. Available: get_file, search_codebase."
     end
