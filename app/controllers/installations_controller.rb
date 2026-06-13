@@ -7,7 +7,7 @@ class InstallationsController < ApplicationController
 
   def new
     @installation = current_user.installations.build
-    @repos = GithubService.new(token: current_user.github_token).list_repos
+    @repos = cached_repos
   end
 
   def create
@@ -16,7 +16,7 @@ class InstallationsController < ApplicationController
     if @installation.save
       redirect_to @installation, notice: "Repo added successfully."
     else
-      @repos = GithubService.new(token: current_user.github_token).list_repos
+      @repos = cached_repos
       render :new, status: :unprocessable_entity
     end
   end
@@ -32,6 +32,12 @@ class InstallationsController < ApplicationController
 
   def set_installation
     @installation = current_user.installations.find(params[:id])
+  end
+
+  def cached_repos
+    Rails.cache.fetch("github_repos/#{current_user.id}", expires_in: 5.minutes) do
+      GithubService.new(token: current_user.github_token).list_repos
+    end
   end
 
   def installation_params

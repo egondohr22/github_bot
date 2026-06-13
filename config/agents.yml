@@ -25,7 +25,7 @@ orchestrator:
 
       Rules:
       - Only include files from the changed files list above.
-      - A file may appear under multiple agents if it warrants review by several.
+      - A file may appear under multiple agents if it needs review by several.
       - Leave an agent's list empty [] if no changed files are relevant to it.
       - Assign migration files to performance (index checks).
       - Assign config/initializer files to security.

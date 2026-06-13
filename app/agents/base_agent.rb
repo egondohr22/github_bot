@@ -92,7 +92,7 @@ class BaseAgent < ApplicationService
 
   def execute_tool(tool_call, context)
     name = tool_call['name']
-    args = tool_call['args'] || {}
+    args = tool_call['args']
     owner = context['owner']
     repo = context['repo']
     ref = context['head_branch']
