@@ -1,27 +1,58 @@
-<div class="flex items-center justify-between mb-6">
-  <h1 class="text-2xl font-bold">Dashboard</h1>
-  <%= link_to "Add Repo", new_installation_path, class: "bg-gray-900 text-white text-sm px-4 py-2 rounded-lg hover:bg-gray-700 transition" %>
-</div>
+<% content_for :page_title, "Dashboard" %>
 
 <% if @pull_requests.empty? %>
-  <div class="text-center py-16 text-gray-400">
-    <p class="text-lg mb-2">No pull requests yet.</p>
-    <p class="text-sm">Add a repo and set up the webhook to get started.</p>
+  <div class="card divide-y divide-gray-100">
+    <%= link_to new_installation_path,
+          data: { turbo_frame: "modal" },
+          class: "flex items-center space-x-3 px-5 py-4 hover:theme-bg-secondary transition-all duration-150 block" do %>
+      <div class="w-6 h-6 rounded-md bg-blue-100 flex items-center justify-center flex-shrink-0">
+        <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+      </div>
+      <span class="text-sm font-medium text-blue-600">Add repository</span>
+    <% end %>
+    <div class="px-5 py-12 text-center">
+      <p class="text-sm theme-text-secondary">No pull requests yet. Add a repo and set up the webhook to get started.</p>
+    </div>
   </div>
 <% else %>
-  <div class="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
+  <div class="card divide-y divide-gray-100">
+    <%= link_to new_installation_path,
+          data: { turbo_frame: "modal" },
+          class: "flex items-center space-x-3 px-5 py-3.5 hover:theme-bg-secondary transition-all duration-150 block" do %>
+      <div class="w-6 h-6 rounded-md bg-blue-100 flex items-center justify-center flex-shrink-0">
+        <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+      </div>
+      <span class="text-sm font-medium text-blue-600">Add repository</span>
+    <% end %>
+
     <% @pull_requests.each do |pr| %>
-      <%= link_to pull_request_path(pr), class: "px-5 py-4 flex items-center justify-between hover:bg-gray-50 transition block" do %>
-        <div>
-          <div class="flex items-center gap-2 mb-1">
-            <span class="text-sm font-medium text-gray-500"><%= pr.installation.repo %></span>
-            <span class="font-semibold">#<%= pr.github_pr_number %></span>
+      <%= link_to pull_request_path(pr),
+            class: "flex items-center justify-between px-5 py-4 hover:theme-bg-secondary transition-all duration-150 block" do %>
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-2 mb-0.5">
+            <span class="text-xs font-medium theme-text-secondary truncate"><%= pr.installation.repo %></span>
+            <span class="text-xs theme-text-secondary">·</span>
+            <span class="text-sm font-semibold theme-text-primary">#<%= pr.github_pr_number %></span>
           </div>
-          <div class="text-xs text-gray-400">
-            <%= pr.head_branch %> → <%= pr.base_branch %> · <%= time_ago_in_words(pr.created_at) %> ago
+          <div class="text-xs theme-text-secondary">
+            <span class="font-mono"><%= pr.head_branch %></span>
+            <span class="mx-1">-></span>
+            <span class="font-mono"><%= pr.base_branch %></span>
+            <% if pr.author.present? %>
+              <span class="mx-1">·</span>
+              <span>by <%= pr.author %></span>
+            <% end %>
+            <span class="mx-1">·</span>
+            <span><%= time_ago_in_words(pr.created_at) %> ago</span>
           </div>
         </div>
-        <%= render "shared/status_badge", status: pr.status %>
+        <div class="ml-4 flex-shrink-0">
+          <%= render "shared/status_badge", status: pr.status %>
+        </div>
       <% end %>
     <% end %>
   </div>

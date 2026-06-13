@@ -1,55 +1,66 @@
-<div class="mb-6 flex items-center gap-3">
-  <%= link_to "← PR ##{@review.pull_request.github_pr_number}", pull_request_path(@review.pull_request), class: "text-sm text-gray-500 hover:text-gray-700" %>
+<% content_for :page_title, "Review ##{@review.id}" %>
+
+<div class="mb-4">
+  <%= link_to "<- PR ##{@review.pull_request.github_pr_number}", pull_request_path(@review.pull_request),
+        class: "text-sm theme-text-secondary hover:theme-text-primary transition-colors" %>
 </div>
 
-<div class="flex items-start justify-between mb-6">
-  <div>
-    <div class="text-sm text-gray-500 mb-1"><%= @review.pull_request.installation.repo %></div>
-    <h1 class="text-2xl font-bold">Review #<%= @review.id %></h1>
-    <div class="text-sm text-gray-400 mt-1"><%= @review.created_at.strftime("%B %-d, %Y at %H:%M") %></div>
+<div class="card px-5 py-4 mb-5">
+  <div class="flex items-start justify-between">
+    <div>
+      <div class="text-xs theme-text-secondary font-mono mb-1"><%= @review.pull_request.installation.repo %></div>
+      <div class="text-xs theme-text-secondary"><%= @review.created_at.strftime("%B %-d, %Y at %H:%M") %></div>
+    </div>
+    <%= render "shared/status_badge", status: @review.status %>
   </div>
-  <%= render "shared/status_badge", status: @review.status %>
 </div>
 
 <% if @review.final_comment.present? %>
-  <div class="mb-8">
-    <h2 class="text-lg font-semibold mb-3">Final Comment</h2>
-    <div class="bg-white rounded-xl border border-gray-200 px-6 py-5 prose prose-sm max-w-none text-gray-800 whitespace-pre-wrap font-mono text-sm leading-relaxed">
-      <%= @review.final_comment %>
+  <div class="mb-5">
+    <h2 class="text-sm font-semibold theme-text-secondary uppercase tracking-wide mb-3">Final Comment</h2>
+    <div class="card px-5 py-4">
+      <pre class="text-sm theme-text-primary font-mono whitespace-pre-wrap leading-relaxed"><%= @review.final_comment %></pre>
     </div>
   </div>
 <% end %>
 
 <% if @review.agent_results.any? %>
-  <h2 class="text-lg font-semibold mb-3">Agent Results</h2>
-  <div class="space-y-4">
-    <% @review.agent_results.each do |result| %>
-      <div class="bg-white rounded-xl border border-gray-200">
-        <div class="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <span class="font-medium text-sm"><%= result.agent_name %></span>
-            <% if result.priority.present? %>
-              <%= render "shared/status_badge", status: result.priority %>
-            <% end %>
-          </div>
-          <div class="text-xs text-gray-400">
-            <%= result.tool_calls_made %> tool call<%= result.tool_calls_made == 1 ? "" : "s" %>
-          </div>
-        </div>
-        <div class="px-5 py-4 text-sm text-gray-700 whitespace-pre-wrap font-mono leading-relaxed">
-          <%= result.findings.presence || "No findings." %>
-        </div>
-        <% if result.files_reviewed.any? %>
-          <div class="px-5 py-3 border-t border-gray-100">
-            <div class="text-xs text-gray-400 mb-1">Files reviewed</div>
-            <div class="flex flex-wrap gap-1">
-              <% result.files_reviewed.each do |file| %>
-                <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded font-mono"><%= file %></span>
+  <div>
+    <h2 class="text-sm font-semibold theme-text-secondary uppercase tracking-wide mb-3">
+      Agent Results
+      <span class="ml-2 theme-muted text-xs px-1.5 py-0.5 rounded font-normal normal-case tracking-normal">
+        <%= @review.agent_results.size %> agent<%= @review.agent_results.size == 1 ? "" : "s" %>
+      </span>
+    </h2>
+    <div class="space-y-3">
+      <% @review.agent_results.each do |result| %>
+        <div class="card">
+          <div class="px-5 py-3 border-b theme-border flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+              <span class="text-sm font-semibold theme-text-primary"><%= result.agent_name %></span>
+              <% if result.priority.present? %>
+                <%= render "shared/status_badge", status: result.priority %>
               <% end %>
             </div>
+            <div class="text-xs theme-text-secondary">
+              <%= result.tool_calls_made %> tool call<%= result.tool_calls_made == 1 ? "" : "s" %>
+            </div>
           </div>
-        <% end %>
-      </div>
-    <% end %>
+          <div class="px-5 py-4">
+            <pre class="text-sm theme-text-primary font-mono whitespace-pre-wrap leading-relaxed"><%= result.findings.presence || "No findings." %></pre>
+          </div>
+          <% if result.files_reviewed.any? %>
+            <div class="px-5 py-3 border-t theme-border">
+              <div class="text-xs theme-text-secondary mb-2">Files reviewed</div>
+              <div class="flex flex-wrap gap-1.5">
+                <% result.files_reviewed.each do |file| %>
+                  <span class="text-xs bg-gray-100 theme-text-secondary px-2 py-0.5 rounded font-mono"><%= file %></span>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
   </div>
 <% end %>

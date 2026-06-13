@@ -1,26 +1,45 @@
-<div class="flex items-center justify-between mb-6">
-  <h1 class="text-2xl font-bold">Connected Repos</h1>
-  <%= link_to "Add Repo", new_installation_path, class: "bg-gray-900 text-white text-sm px-4 py-2 rounded-lg hover:bg-gray-700 transition" %>
-</div>
+<% content_for :page_title, "Repositories" %>
 
-<% if @installations.empty? %>
-  <div class="text-center py-16 text-gray-400">
-    <p class="text-lg mb-2">No repos connected yet.</p>
-    <p class="text-sm">Add a repo to get started.</p>
-  </div>
-<% else %>
-  <div class="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
+<div class="card divide-y divide-gray-100">
+  <%= link_to new_installation_path,
+        data: { turbo_frame: "modal" },
+        class: "flex items-center space-x-3 px-5 py-3.5 hover:theme-bg-secondary transition-all duration-150 block" do %>
+    <div class="w-6 h-6 rounded-md bg-blue-100 flex items-center justify-center flex-shrink-0">
+      <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+    </div>
+    <span class="text-sm font-medium text-blue-600">Add repository</span>
+  <% end %>
+
+  <% if @installations.empty? %>
+    <div class="px-5 py-12 text-center">
+      <p class="text-sm theme-text-secondary">No repositories connected yet.</p>
+    </div>
+  <% else %>
     <% @installations.each do |installation| %>
-      <div class="px-5 py-4 flex items-center justify-between">
-        <div>
-          <div class="font-medium"><%= installation.repo %></div>
-          <div class="text-xs text-gray-400 mt-0.5">Added <%= time_ago_in_words(installation.created_at) %> ago</div>
+      <div class="flex items-center justify-between px-5 py-4">
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center space-x-2 mb-0.5">
+            <svg class="w-4 h-4 theme-text-secondary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+            </svg>
+            <span class="text-sm font-medium theme-text-primary font-mono"><%= installation.repo %></span>
+          </div>
+          <div class="text-xs theme-text-secondary pl-6">
+            Added <%= time_ago_in_words(installation.created_at) %> ago
+          </div>
         </div>
-        <div class="flex items-center gap-3">
-          <%= link_to "View", installation_path(installation), class: "text-sm text-gray-600 hover:text-gray-900" %>
-          <%= button_to "Remove", installation_path(installation), method: :delete, data: { turbo_confirm: "Remove #{installation.repo}?" }, class: "text-sm text-red-500 hover:text-red-700 bg-transparent border-0 cursor-pointer" %>
+        <div class="flex items-center space-x-2 ml-4 flex-shrink-0">
+          <%= link_to "Configure", installation_path(installation),
+                data: { turbo_frame: "modal" },
+                class: "btn-secondary text-xs py-1.5 px-3" %>
+          <%= button_to "Remove", installation_path(installation),
+                method: :delete,
+                data: { turbo_confirm: "Remove #{installation.repo}? This cannot be undone." },
+                class: "btn-danger text-xs py-1.5 px-3" %>
         </div>
       </div>
     <% end %>
-  </div>
-<% end %>
+  <% end %>
+</div>

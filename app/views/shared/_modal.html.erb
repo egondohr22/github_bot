@@ -1,0 +1,58 @@
+<%
+  size_classes = {
+    'small'  => 'max-w-md',
+    'medium' => 'max-w-2xl',
+    'large'  => 'max-w-4xl',
+    'full'   => 'max-w-6xl'
+  }
+
+  size     = local_assigns[:size] || 'medium'
+  title    = local_assigns[:title] || ''
+  closable = local_assigns.fetch(:closable, true)
+%>
+
+<div class="fixed inset-0 z-50 overflow-y-auto transition-opacity duration-200"
+     data-controller="modal"
+     data-modal-size-value="<%= size %>"
+     data-modal-closable-value="<%= closable %>"
+     data-turbo-temporary>
+
+  <div class="fixed inset-0 bg-black/50 backdrop-blur-sm"
+       data-modal-target="backdrop"
+       data-action="click->modal#backdropClick"></div>
+
+  <div class="flex min-h-full items-center justify-center p-4"
+       data-modal-target="container">
+
+    <div class="relative w-full <%= size_classes[size] %> transform rounded-xl
+                theme-bg-primary border theme-border shadow-2xl transition-all duration-200"
+         data-modal-target="content"
+         data-action="turbo:submit-end->modal#submitEnd">
+
+      <% if title.present? || closable %>
+        <div class="flex items-center justify-between px-6 py-4 border-b theme-border">
+          <% if title.present? %>
+            <h2 class="text-lg font-semibold theme-text-primary"><%= title %></h2>
+          <% else %>
+            <div></div>
+          <% end %>
+
+          <% if closable %>
+            <button type="button"
+                    class="p-1.5 rounded-lg theme-text-secondary hover:theme-text-primary
+                           hover:theme-bg-secondary transition-all duration-150"
+                    data-action="click->modal#closeClick">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          <% end %>
+        </div>
+      <% end %>
+
+      <div class="px-6 py-5">
+        <%= yield %>
+      </div>
+    </div>
+  </div>
+</div>

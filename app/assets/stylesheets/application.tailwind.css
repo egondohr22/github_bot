@@ -2,12 +2,121 @@
 @tailwind components;
 @tailwind utilities;
 
-/*
+@layer base {
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  }
 
-@layer components {
-  .btn-primary {
-    @apply py-2 px-4 bg-blue-200;
+  html {
+    scroll-behavior: smooth;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 4px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background-color: color-mix(in srgb, var(--theme-bg-tertiary) 30%, transparent);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: color-mix(in srgb, var(--theme-text-primary) 40%, transparent);
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(in srgb, var(--theme-text-primary) 60%, transparent);
   }
 }
 
-*/
+@layer components {
+  :root {
+    --theme-bg-primary: theme('colors.white');
+    --theme-bg-secondary: theme('colors.gray.50');
+    --theme-bg-tertiary: theme('colors.gray.100');
+    --theme-bg-hover: rgba(0, 0, 0, 0.02);
+    --theme-border: theme('colors.gray.200');
+    --theme-text-primary: theme('colors.gray.900');
+    --theme-text-secondary: theme('colors.gray.600');
+    --theme-text-accent: theme('colors.blue.600');
+    --theme-accent: theme('colors.blue.600');
+    --theme-accent-hover: theme('colors.blue.700');
+    --theme-muted: theme('colors.gray.100');
+  }
+
+  .theme-bg-primary    { background-color: var(--theme-bg-primary); }
+  .theme-bg-secondary  { background-color: var(--theme-bg-secondary); }
+  .theme-bg-tertiary   { background-color: var(--theme-bg-tertiary); }
+  .theme-border        { border-color: var(--theme-border); }
+  .theme-text-primary  { color: var(--theme-text-primary); }
+  .theme-text-secondary { color: var(--theme-text-secondary); }
+  .theme-text-accent   { color: var(--theme-text-accent); }
+  .theme-accent        { background-color: var(--theme-accent); }
+  .theme-accent:hover  { background-color: var(--theme-accent-hover); }
+  .theme-muted         { background-color: var(--theme-muted); color: var(--theme-text-secondary); }
+
+  .hover\:theme-bg-secondary:hover { background-color: var(--theme-bg-secondary); }
+  .hover\:theme-bg-tertiary:hover  { background-color: var(--theme-bg-tertiary); }
+  .hover\:theme-text-primary:hover { color: var(--theme-text-primary); }
+
+  .btn-primary {
+    @apply text-white font-medium py-2 px-4 rounded-lg shadow
+           transform hover:-translate-y-0.5 active:translate-y-0
+           transition-all duration-200 ease-out cursor-pointer;
+    background-color: var(--theme-accent);
+  }
+  .btn-primary:hover {
+    background-color: var(--theme-accent-hover);
+  }
+
+  .btn-secondary {
+    @apply theme-bg-secondary theme-text-secondary font-medium py-2 px-4 rounded-lg
+           border theme-border transition-all duration-200 ease-out cursor-pointer;
+  }
+  .btn-secondary:hover {
+    background-color: var(--theme-bg-tertiary);
+  }
+
+  .btn-danger {
+    @apply bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg
+           transition-all duration-200 ease-out cursor-pointer;
+  }
+
+  .card {
+    @apply theme-bg-primary border theme-border rounded-xl shadow-sm
+           transition-all duration-200 ease-out;
+  }
+
+  .input-field {
+    @apply theme-bg-secondary border theme-border rounded-lg px-3 py-2
+           theme-text-primary placeholder:theme-text-secondary
+           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+           transition-all duration-200 ease-out w-full;
+  }
+
+  .nav-item {
+    @apply flex items-center space-x-3 px-3 py-2 rounded-lg font-medium
+           transition-all duration-200 theme-text-secondary;
+  }
+  .nav-item:hover {
+    color: var(--theme-text-primary);
+    background-color: color-mix(in srgb, var(--theme-accent) 8%, transparent);
+  }
+  .nav-item-active {
+    color: var(--theme-accent);
+    background-color: color-mix(in srgb, var(--theme-accent) 12%, transparent);
+  }
+
+  .notification-toast {
+    @apply max-w-sm;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-4px); }
+  }
+  .float-animation {
+    animation: float 3s ease-in-out infinite;
+  }
+}

@@ -1,40 +1,58 @@
-<div class="mb-6">
-  <%= link_to "← Dashboard", dashboard_path, class: "text-sm text-gray-500 hover:text-gray-700" %>
+<% content_for :page_title, "PR ##{@pull_request.github_pr_number}" %>
+
+<div class="mb-4">
+  <%= link_to "<- Dashboard", dashboard_path, class: "text-sm theme-text-secondary hover:theme-text-primary transition-colors" %>
 </div>
 
-<div class="flex items-start justify-between mb-6">
-  <div>
-    <div class="text-sm text-gray-500 mb-1"><%= @pull_request.installation.repo %></div>
-    <h1 class="text-2xl font-bold">PR #<%= @pull_request.github_pr_number %></h1>
-    <div class="text-sm text-gray-400 mt-1">
-      <%= @pull_request.head_branch %> → <%= @pull_request.base_branch %>
-      <% if @pull_request.author.present? %> · by <%= @pull_request.author %><% end %>
+<div class="card px-5 py-4 mb-5">
+  <div class="flex items-start justify-between">
+    <div>
+      <div class="text-xs theme-text-secondary font-mono mb-1"><%= @pull_request.installation.repo %></div>
+      <div class="flex items-center space-x-2 mb-1">
+        <span class="text-sm font-mono theme-text-secondary"><%= @pull_request.head_branch %></span>
+        <svg class="w-3 h-3 theme-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+        </svg>
+        <span class="text-sm font-mono theme-text-secondary"><%= @pull_request.base_branch %></span>
+      </div>
+      <% if @pull_request.author.present? %>
+        <div class="text-xs theme-text-secondary">by <span class="font-medium"><%= @pull_request.author %></span></div>
+      <% end %>
     </div>
+    <%= render "shared/status_badge", status: @pull_request.status %>
   </div>
-  <%= render "shared/status_badge", status: @pull_request.status %>
 </div>
 
-<h2 class="text-lg font-semibold mb-3">Reviews</h2>
+<div class="flex items-center justify-between mb-3">
+  <h2 class="text-sm font-semibold theme-text-secondary uppercase tracking-wide">Reviews</h2>
+</div>
 
 <% if @pull_request.reviews.empty? %>
-  <div class="text-gray-400 text-sm py-8 text-center">No reviews yet.</div>
+  <div class="card px-5 py-12 text-center">
+    <p class="text-sm theme-text-secondary">No reviews yet.</p>
+  </div>
 <% else %>
-  <div class="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
+  <div class="card divide-y divide-gray-100">
     <% @pull_request.reviews.order(created_at: :desc).each do |review| %>
-      <%= link_to review_path(review), class: "px-5 py-4 flex items-center justify-between hover:bg-gray-50 transition block" do %>
-        <div>
-          <div class="text-sm font-medium mb-1">
+      <%= link_to review_path(review),
+            class: "flex items-center justify-between px-5 py-4 hover:theme-bg-secondary transition-all duration-150 block" do %>
+        <div class="min-w-0 flex-1">
+          <div class="text-sm font-medium theme-text-primary mb-0.5">
             Review #<%= review.id %>
             <% if review.triggered_by_comment.present? %>
-              <span class="text-gray-400 font-normal">· "<%= truncate(review.triggered_by_comment, length: 50) %>"</span>
+              <span class="theme-text-secondary font-normal text-xs ml-1">
+                "<%= truncate(review.triggered_by_comment, length: 50) %>"
+              </span>
             <% end %>
           </div>
-          <div class="text-xs text-gray-400">
+          <div class="text-xs theme-text-secondary">
             <%= review.agent_results.size %> agent<%= review.agent_results.size == 1 ? "" : "s" %> ·
             <%= review.created_at.strftime("%b %-d, %Y at %H:%M") %>
           </div>
         </div>
-        <%= render "shared/status_badge", status: review.status %>
+        <div class="ml-4 flex-shrink-0">
+          <%= render "shared/status_badge", status: review.status %>
+        </div>
       <% end %>
     <% end %>
   </div>

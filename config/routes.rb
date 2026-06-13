@@ -1,7 +1,10 @@
 Rails.application.routes.draw do
   root "pages#landing"
 
-  devise_for :users, controllers: { omniauth_callbacks: "users/omniauth_callbacks" }
+  devise_for :users, controllers: {
+    omniauth_callbacks: "users/omniauth_callbacks",
+    sessions: "users/sessions"
+  }
 
   get  "dashboard", to: "dashboard#index", as: :dashboard
   resources :installations, only: [:index, :new, :create, :show, :destroy]

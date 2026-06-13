@@ -1,18 +1,36 @@
-<div class="max-w-lg mx-auto">
-  <h1 class="text-2xl font-bold mb-6">Settings</h1>
+<% content_for :page_title, "Settings" %>
 
-  <div class="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100 mb-6">
+<div class="max-w-lg">
+  <div class="card divide-y divide-gray-100">
     <div class="px-5 py-4">
-      <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">GitHub Account</div>
-      <div class="text-sm font-medium"><%= current_user.github_username %></div>
-      <% if current_user.name.present? %>
-        <div class="text-xs text-gray-400"><%= current_user.name %></div>
+      <div class="text-xs font-semibold theme-text-secondary uppercase tracking-wide mb-2">GitHub Account</div>
+      <div class="flex items-center space-x-3">
+        <div class="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+          <span class="text-sm font-semibold text-blue-600">
+            <%= current_user.github_username.first.upcase %>
+          </span>
+        </div>
+        <div>
+          <div class="text-sm font-medium theme-text-primary"><%= current_user.github_username %></div>
+          <% if current_user.name.present? %>
+            <div class="text-xs theme-text-secondary"><%= current_user.name %></div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <div class="px-5 py-4">
+      <div class="text-xs font-semibold theme-text-secondary uppercase tracking-wide mb-1">Email</div>
+      <div class="text-sm theme-text-primary"><%= current_user.email %></div>
+    </div>
+
+    <div class="px-5 py-4">
+      <div class="text-xs font-semibold theme-text-secondary uppercase tracking-wide mb-3">Danger Zone</div>
+      <%= link_to destroy_user_session_path,
+            data: { turbo_method: :delete },
+            class: "btn-secondary text-sm" do %>
+        Sign out of PR Review Bot
       <% end %>
     </div>
-    <div class="px-5 py-4">
-      <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Email</div>
-      <div class="text-sm"><%= current_user.email %></div>
-    </div>
   </div>
-
 </div>
