@@ -3,17 +3,10 @@ name: My Bot
 on:
   issue_comment:
     types: [created]
-  pull_request_review_comment:
-    types: [created]
-  pull_request_review:
-    types: [submitted]
 
 jobs:
   my-bot:
-    if: |
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@my-bot')) ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@my-bot')) ||
-      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@my-bot'))
+    if: contains(github.event.comment.body, '@ReviewPilot')
 
     runs-on: ubuntu-latest
 
@@ -33,7 +26,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          PR_URL="${{ github.event.issue.pull_request.url || github.event.pull_request.url }}"
+          PR_URL="${{ github.event.issue.pull_request.url }}"
           if [ -z "$PR_URL" ] || [ "$PR_URL" = "null" ]; then
             echo "No PR info found, exiting."
             exit 1
@@ -55,8 +48,8 @@ jobs:
           WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
         run: |
-          COMMENT="${{ github.event.comment.body || github.event.review.body }}"
-          PR_NUMBER="${{ github.event.issue.number || github.event.pull_request.number }}"
+          COMMENT="${{ github.event.comment.body }}"
+          PR_NUMBER="${{ github.event.issue.number }}"
           BASE="${{ steps.pr.outputs.base }}"
           HEAD="${{ steps.pr.outputs.head }}"
           OWNER="${{ github.repository_owner }}"

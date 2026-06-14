@@ -38,7 +38,7 @@ orchestrator:
 
       The agents have finished. Merge what they found into a single review comment.
 
-      Each agent had a priority, and the findings below are already sorted highest first (critical > high > medium > low). Let that priority decide how much room each one gets:
+      Each agent has its priority level next to its name. Use that as a guide for this review. 
       - Critical and high: lead with these, explain the impact, give them the most space.
       - Medium: normal, actionable suggestions.
       - Low: a quick mention as a minor or optional note, nothing more.
