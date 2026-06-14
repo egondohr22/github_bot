@@ -7,9 +7,10 @@ class AgentOrchestrator < ApplicationService
     'performance' => PerformanceAgent
   }.freeze
 
-  def initialize
+  def initialize(settings)
     @config = YAML.safe_load_file(CONFIG_PATH)
     @gemini = GeminiService.new
+    @settings = settings
   end
 
   def orchestrate_review(parsed_diff, pr_data, github_token:, repo_cloner: nil)
@@ -17,10 +18,11 @@ class AgentOrchestrator < ApplicationService
 
     routing_plan = create_review_plan(parsed_diff, pr_data)
     agent_results = execute_agents_with_routing(parsed_diff, pr_data, routing_plan[:routing], github_token, repo_cloner)
+    agent_results.sort_by! { |r| -ReviewSettings.priority_weight(r[:priority]) }
     final_review = synthesize_review(pr_data, agent_results, routing_plan[:summary])
 
     log_info("AgentOrchestrator: Review complete for PR ##{pr_data['pr_number']}")
-    final_review
+    { comment: final_review, agent_results: agent_results }
   end
 
   private
@@ -66,14 +68,22 @@ class AgentOrchestrator < ApplicationService
     github = GithubService.new(token: github_token)
 
     AGENT_CLASSES.filter_map do |key, agent_class|
+      unless @settings.agent_enabled?(key)
+        log_info("AgentOrchestrator: Skipping #{key} agent (disabled in settings)")
+        next
+      end
+
       files = routing[key] || []
       next if files.empty?
 
       log_info("AgentOrchestrator: Running #{key} agent on #{files.size} file(s)")
-      agent_class.new(github_service: github, repo_cloner: repo_cloner).review(parsed_diff.slice(*files), pr_data)
+      result = agent_class.new(github_service: github, repo_cloner: repo_cloner, max_tool_calls: @settings.max_tool_calls).review(parsed_diff.slice(*files), pr_data)
+      result[:priority] = @settings.priority_for(key)
+      result[:files_reviewed] = files
+      result
     rescue => e
       log_error("AgentOrchestrator: #{agent_class.name} failed — #{e.message}")
-      { agent: key, findings: "Review failed: #{e.message}", priority: 'error', tool_calls: 0, duration_ms: 0 }
+      { agent: key, findings: "Review failed: #{e.message}", priority: 'error', tool_calls: 0, files_reviewed: files }
     end
   end
 

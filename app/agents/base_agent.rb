@@ -1,12 +1,13 @@
 class BaseAgent < ApplicationService
   CONFIG_PATH = Rails.root.join('config', 'agents.yml')
 
-  def initialize(github_service: nil, repo_cloner: nil)
+  def initialize(github_service: nil, repo_cloner: nil, max_tool_calls: ReviewSettings.new.max_tool_calls)
     @config = YAML.safe_load_file(CONFIG_PATH)
     timeout = @config.dig('agents', 'ollama_timeout')
     @ollama = OllamaService.new(read_timeout: timeout)
     @github = github_service
     @cloner = repo_cloner
+    @max_tool_calls = max_tool_calls
   end
 
   def review(parsed_diff, context = {})
@@ -21,7 +22,7 @@ class BaseAgent < ApplicationService
     system_message = "#{agent_cfg['system_prompt'].strip}\n\n#{tools_instruction}"
     model = @config.dig('agents', 'model')
     temperature = @config.dig('agents', 'temperature')
-    max_tool_calls = @config.dig('agents', 'max_tool_calls')
+    max_tool_calls = @max_tool_calls
 
     log_info("#{self.class.name}: Starting review with model=#{model}")
 

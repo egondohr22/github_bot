@@ -8,6 +8,10 @@ class User < ApplicationRecord
 
   validates :uid, :github_username, :github_token, presence: true
 
+  def review_settings
+    ReviewSettings.for(self)
+  end
+
   def self.from_omniauth(auth)
     find_or_initialize_by(uid: auth.uid).tap do |user|
       user.email           = auth.info.email

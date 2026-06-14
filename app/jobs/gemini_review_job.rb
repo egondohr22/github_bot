@@ -10,9 +10,12 @@ class GeminiReviewJob < ApplicationJob
 
     review.update!(status: 'reviewing')
     parsed_diff = DiffParser.parse(review.raw_diff)
+    settings = pr.installation.user.review_settings
 
     RepoCloner.with(owner: pr_data['owner'], repo: pr_data['repo'], ref: pr_data['head_branch'], token: token) do |cloner|
-      final_comment = AgentOrchestrator.new.orchestrate_review(parsed_diff, pr_data, github_token: token, repo_cloner: cloner)
+      result = AgentOrchestrator.new(settings).orchestrate_review(parsed_diff, pr_data, github_token: token, repo_cloner: cloner)
+      final_comment = result[:comment]
+      persist_agent_results(review, result[:agent_results])
 
       GithubService.new(token: token).post_comment(
         owner: pr_data['owner'],
@@ -27,5 +30,20 @@ class GeminiReviewJob < ApplicationJob
   rescue => e
     review&.update!(status: 'failed')
     raise
+  end
+
+  private
+
+  def persist_agent_results(review, agent_results)
+    review.agent_results.destroy_all
+    Array(agent_results).each do |r|
+      review.agent_results.create!(
+        agent_name:      r[:agent],
+        priority:        r[:priority],
+        findings:        r[:findings],
+        files_reviewed:  r[:files_reviewed] || [],
+        tool_calls_made: r[:tool_calls] || 0
+      )
+    end
   end
 end

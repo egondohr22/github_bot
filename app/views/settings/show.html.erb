@@ -1,36 +1,126 @@
 <% content_for :page_title, "Settings" %>
 
-<div class="max-w-lg">
-  <div class="card divide-y divide-gray-100">
-    <div class="px-5 py-4">
-      <div class="text-xs font-semibold theme-text-secondary uppercase tracking-wide mb-2">GitHub Account</div>
-      <div class="flex items-center space-x-3">
-        <div class="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-          <span class="text-sm font-semibold text-blue-600">
-            <%= current_user.github_username.first.upcase %>
-          </span>
-        </div>
-        <div>
-          <div class="text-sm font-medium theme-text-primary"><%= current_user.github_username %></div>
-          <% if current_user.name.present? %>
-            <div class="text-xs theme-text-secondary"><%= current_user.name %></div>
-          <% end %>
-        </div>
+<%
+  agent_meta = {
+    "security"     => { label: "Security",     description: "Finds vulnerabilities — injection, XSS, auth bypass, secrets." },
+    "code_quality" => { label: "Code Quality", description: "Checks Rails conventions, SOLID, DRY and readability." },
+    "performance"  => { label: "Performance",  description: "Spots N+1 queries, missing indexes and bottlenecks." }
+  }
+%>
+
+<div class="max-w-2xl mx-auto space-y-6">
+  <div>
+    <h1 class="text-xl font-semibold theme-text-primary">Settings</h1>
+    <p class="text-sm theme-text-secondary mt-0.5">Manage your account and how the AI reviews your pull requests.</p>
+  </div>
+
+  <%# ── Account ───────────────────────────────────────────── %>
+  <div class="card overflow-hidden">
+    <div class="px-5 py-4 border-b theme-border">
+      <h2 class="text-sm font-semibold theme-text-primary">Account</h2>
+    </div>
+    <div class="px-5 py-4 flex items-center space-x-4">
+      <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+        <span class="text-base font-semibold text-white">
+          <%= current_user.github_username.first.upcase %>
+        </span>
+      </div>
+      <div class="min-w-0">
+        <div class="text-sm font-medium theme-text-primary truncate"><%= current_user.github_username %></div>
+        <div class="text-xs theme-text-secondary truncate"><%= current_user.email %></div>
       </div>
     </div>
-
-    <div class="px-5 py-4">
-      <div class="text-xs font-semibold theme-text-secondary uppercase tracking-wide mb-1">Email</div>
-      <div class="text-sm theme-text-primary"><%= current_user.email %></div>
-    </div>
-
-    <div class="px-5 py-4">
-      <div class="text-xs font-semibold theme-text-secondary uppercase tracking-wide mb-3">Danger Zone</div>
-      <%= link_to destroy_user_session_path,
-            data: { turbo_method: :delete },
-            class: "btn-secondary text-sm" do %>
-        Sign out of PR Review Bot
-      <% end %>
-    </div>
   </div>
+
+  <%# ── Review configuration ──────────────────────────────── %>
+  <%= form_with url: settings_path, method: :patch do |f| %>
+    <div class="card">
+      <div class="px-5 py-4 border-b theme-border">
+        <h2 class="text-sm font-semibold theme-text-primary">Review Configuration</h2>
+        <p class="text-xs theme-text-secondary mt-0.5">Toggle agents, set how much each is emphasized, and how deeply they investigate.</p>
+      </div>
+
+      <%# Agents %>
+      <div class="px-5 py-4 space-y-2.5">
+        <div class="text-xs font-semibold theme-text-secondary uppercase tracking-wide mb-1">Review Agents</div>
+        <% ReviewSettings.available_agents.each do |agent| %>
+          <% meta = agent_meta[agent] || { label: agent.humanize, description: "" } %>
+          <div class="group flex items-center justify-between gap-4 rounded-xl border theme-border px-4 py-3 transition-all duration-200 hover:theme-bg-secondary has-[:checked]:border-blue-400 has-[:checked]:bg-blue-50/40">
+            <div class="min-w-0">
+              <div class="text-sm font-medium theme-text-primary"><%= meta[:label] %></div>
+              <p class="text-xs theme-text-secondary truncate"><%= meta[:description] %></p>
+            </div>
+            <div class="flex items-center gap-3 flex-shrink-0">
+              <%# Priority — controls emphasis in the final synthesized review %>
+              <% current_priority = @review_settings.priority_for(agent) %>
+              <div class="relative w-32" data-controller="select">
+                <input type="hidden" name="agent_priorities[<%= agent %>]" data-select-target="input" value="<%= current_priority %>">
+
+                <button type="button"
+                        data-action="click->select#toggle"
+                        class="input-field text-sm flex items-center justify-between text-left py-1.5"
+                        title="Higher priority gets more emphasis in the final review">
+                  <span data-select-target="label" class="theme-text-primary"><%= current_priority.capitalize %></span>
+                  <svg data-select-target="chevron"
+                       class="w-4 h-4 theme-text-secondary flex-shrink-0 ml-2 transition-transform duration-150"
+                       fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                  </svg>
+                </button>
+
+                <div data-select-target="menu"
+                     class="hidden absolute z-30 top-full right-0 mt-1 w-full card shadow-xl
+                            transform transition-all duration-150 origin-top overflow-hidden">
+                  <div class="py-1">
+                    <% ReviewSettings::PRIORITY_LEVELS.reverse_each do |level| %>
+                      <button type="button"
+                              data-select-target="option"
+                              data-action="click->select#select"
+                              data-select-value="<%= level %>"
+                              data-select-label="<%= level.capitalize %>"
+                              class="w-full text-left px-3 py-2 text-sm theme-text-primary hover:theme-bg-secondary transition-colors <%= "theme-bg-secondary font-medium" if current_priority == level %>">
+                        <%= level.capitalize %>
+                      </button>
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+              <%# Enable / disable toggle %>
+              <label class="relative cursor-pointer flex-shrink-0">
+                <input type="checkbox" name="enabled_agents[]" value="<%= agent %>"
+                       <%= "checked" if @review_settings.agent_enabled?(agent) %>
+                       class="sr-only peer">
+                <div class="w-10 h-6 rounded-full bg-gray-200 peer-checked:bg-blue-600 transition-colors duration-200"></div>
+                <div class="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 peer-checked:translate-x-4"></div>
+              </label>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <%# Max tool calls %>
+      <div class="px-5 py-4 border-t theme-border">
+        <label for="max_tool_calls" class="block text-xs font-semibold theme-text-secondary uppercase tracking-wide mb-2">
+          Max Tool Calls Per Agent
+        </label>
+        <div class="flex items-center gap-3">
+          <input type="number" name="max_tool_calls" id="max_tool_calls"
+                 value="<%= @review_settings.max_tool_calls %>"
+                 min="<%= ReviewSettings::MIN_TOOL_CALLS %>" max="<%= ReviewSettings::MAX_TOOL_CALLS %>"
+                 class="input-field text-sm w-24">
+          <span class="text-xs theme-text-secondary">
+            calls (<%= ReviewSettings::MIN_TOOL_CALLS %>–<%= ReviewSettings::MAX_TOOL_CALLS %>)
+          </span>
+        </div>
+        <p class="text-xs theme-text-secondary mt-2">
+          How many times each agent may read or search the codebase before concluding. Higher is more thorough, but slower and costlier.
+        </p>
+      </div>
+
+      <%# Actions %>
+      <div class="px-5 py-3 border-t theme-border theme-bg-secondary rounded-b-xl flex justify-end">
+        <%= f.submit "Save changes", class: "btn-primary text-sm" %>
+      </div>
+    </div>
+  <% end %>
 </div>

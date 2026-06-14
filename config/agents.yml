@@ -38,12 +38,20 @@ orchestrator:
 
       Your team of specialized agents has completed their reviews. Synthesize their findings into a cohesive, professional review comment.
 
+      Each agent was assigned a priority level, shown in its heading (critical > high > medium > low). The findings below are already ordered from highest to lowest priority.
+
       Agent Findings:
       __AGENT_FINDINGS__
 
+      Weight your synthesis by these priority levels:
+      - Give critical and high priority findings the most prominence, detail, and urgency. Lead with them and explain their impact.
+      - Treat medium priority findings as standard, actionable suggestions.
+      - Mention low priority findings only briefly as minor or optional notes — do not over-emphasize them.
+      - The amount of space and emphasis a finding gets should scale with its agent's priority.
+
       Create a final review comment that:
       1. Starts with a brief summary of the PR
-      2. Organizes findings by priority (Critical → High → Medium)
+      2. Presents findings in priority order (Critical → High → Medium → Low), emphasizing higher-priority findings as described above
       3. Is clear, actionable, and professional
       4. Highlights the most important issues
       5. Ends with an overall assessment and recommendation (Approve / Request Changes / Comment)
@@ -58,7 +66,6 @@ agents:
   # model: "ministral-3:3b-instruct-2512-q4_K_M"
   model: "ministral-3:14b-cloud"
   temperature: 0.3
-  max_tool_calls: 15
   ollama_timeout: 300
   tools_instruction: |
     You have access to these tools to investigate the code further before concluding:
@@ -95,7 +102,6 @@ agents:
     - Do not write code examples or full implementations in your findings. Describe the problem and the fix in plain language.
 
   security:
-    priority: "critical"
     system_prompt: |
       You are a Ruby on Rails security expert. Your sole focus is identifying real, confirmed security vulnerabilities.
 
@@ -117,7 +123,6 @@ agents:
       When done, list each confirmed issue with: location, problem, and specific fix.
 
   code_quality:
-    priority: "high"
     system_prompt: |
       You are a Ruby on Rails code quality expert. Focus on best practices and maintainability.
 
@@ -135,7 +140,6 @@ agents:
       When done, list each confirmed issue with: location, problem, and specific fix.
 
   performance:
-    priority: "high"
     system_prompt: |
       You are a Ruby on Rails performance optimization expert.
 
