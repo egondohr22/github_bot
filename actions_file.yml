@@ -18,11 +18,9 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: write
+      contents: read
       pull-requests: write
       issues: write
-      id-token: write
-      actions: read
 
     steps:
       - name: Checkout repository
@@ -52,21 +50,20 @@ jobs:
           git fetch origin ${{ steps.pr.outputs.base }}
           git fetch origin ${{ steps.pr.outputs.head }}
 
-      - name: Send event to rails server
-        id: send_to_server
+      - name: Build, sign and send payload
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
         run: |
           COMMENT="${{ github.event.comment.body || github.event.review.body }}"
           PR_NUMBER="${{ github.event.issue.number || github.event.pull_request.number }}"
           BASE="${{ steps.pr.outputs.base }}"
           HEAD="${{ steps.pr.outputs.head }}"
           OWNER="${{ github.repository_owner }}"
-          REPO="${{ github.event.repository.name }}"
+          REPO="$OWNER/${{ github.event.repository.name }}"
 
           DIFF=$(git diff origin/$BASE...origin/$HEAD | head -n 500)
 
-          # Use jq to properly escape JSON
           PAYLOAD=$(jq -n \
             --arg pr "$PR_NUMBER" \
             --arg base "$BASE" \
@@ -77,23 +74,9 @@ jobs:
             --arg repo "$REPO" \
             '{pr_number: $pr, base_branch: $base, head_branch: $head, comment: $comment, diff: $diff, owner: $owner, repo: $repo}')
 
-          RESPONSE=$(curl -s -X POST "${{ secrets.WEBHOOK_URL }}" \
+          SIG=$(echo -n "$PAYLOAD" | openssl dgst -sha256 -hmac "$WEBHOOK_SECRET" | awk '{print $2}')
+
+          curl -s -o /dev/null -w "%{http_code}" -X POST "$WEBHOOK_URL" \
             -H "Content-Type: application/json" \
-            -d "$PAYLOAD")
-
-          echo "server_response=$RESPONSE" >> $GITHUB_OUTPUT
-
-      - name: Post server response as comment
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SERVER_RESPONSE: ${{ steps.send_to_server.outputs.server_response }}
-        run: |
-          PR_NUMBER="${{ github.event.issue.number || github.event.pull_request.number }}"
-
-          MESSAGE=$(echo "$SERVER_RESPONSE" | jq -r '.message')
-
-          curl -s -H "Authorization: token $GH_TOKEN" \
-            -H "Content-Type: application/json" \
-            -X POST \
-            -d "$(jq -n --arg body "$MESSAGE" '{body: $body}')" \
-            "https://api.github.com/repos/${{ github.repository }}/issues/${PR_NUMBER}/comments"
+            -H "X-Hub-Signature-256: sha256=$SIG" \
+            -d "$PAYLOAD"
