@@ -11,7 +11,7 @@ class ApplicationService
     ts = Time.now.strftime('%Y%m%d_%H%M%S')
     File.open(LOG_DIR.join("pr#{pr}_#{agent_key}_#{ts}.md"), 'w')
   rescue => e
-    log_error("#{self.class.name}: Could not open conversation log — #{e.message}")
+    log_error("#{self.class.name}: Could not open conversation log: #{e.message}")
     nil
   end
 

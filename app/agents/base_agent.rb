@@ -1,6 +1,8 @@
 class BaseAgent < ApplicationService
   CONFIG_PATH = Rails.root.join('config', 'agents.yml')
 
+  MAX_CONTINUES = 3
+
   def initialize(github_service: nil, repo_cloner: nil, max_tool_calls: ReviewSettings.new.max_tool_calls)
     @config = YAML.safe_load_file(CONFIG_PATH)
     timeout = @config.dig('agents', 'ollama_timeout')
@@ -33,9 +35,10 @@ class BaseAgent < ApplicationService
     ]
 
     tool_calls_made = 0
+    continues = 0
 
     conv = open_conversation_log(context, agent_key, model)
-    conv_write(conv, "# PR \##{context['pr_number']} — #{self.class.name}\n\n")
+    conv_write(conv, "# PR \##{context['pr_number']}, #{self.class.name}\n\n")
     conv_write(conv, "**Model:** #{model} | **Agent:** #{agent_key}\n\n---\n\n")
     conv_write(conv, "## System\n\n#{system_message}\n\n---\n\n")
     conv_write(conv, "## User\n\n#{user_prompt}\n\n---\n\n")
@@ -57,22 +60,37 @@ class BaseAgent < ApplicationService
       end
 
       if parsed['tool_call'] && tool_calls_made < max_tool_calls
+        continues = 0
         tool_name = parsed['tool_call']['name']
         tool_args = parsed['tool_call']['args'] || {}
         tool_result = execute_tool(parsed['tool_call'], context)
         tool_calls_made += 1
 
+        remaining = max_tool_calls - tool_calls_made
         log_info("#{self.class.name}: tool=#{tool_name} (#{tool_calls_made}/#{max_tool_calls})")
         conv_write(conv, "## Tool Call \##{tool_calls_made}: `#{tool_name}`\n\n")
-        conv_write(conv, "**Args:** `#{tool_args.to_json}`\n\n**Result:**\n\n```\n#{tool_result}\n```\n\n---\n\n")
-        remaining = max_tool_calls - tool_calls_made
+        conv_write(conv, "**Args:** `#{tool_args.to_json}`\n\n**Result:**\n\n```\n#{tool_result}\n```\n\n")
+        conv_write(conv, "_(#{remaining} tool calls remaining)_\n\n---\n\n")
         messages << { role: 'user', content: "Tool result:\n#{tool_result}\n\n(#{remaining} tool calls remaining)" }
-      else
+        next
+      end
+
+      if parsed['tool_call']
         break parsed['message'] || response_text
       end
+
+      continues += 1
+      if continues > MAX_CONTINUES
+        log_info("#{self.class.name}: stopping after #{MAX_CONTINUES} no-op turns")
+        break parsed['message'] || response_text
+      end
+
+      log_info("#{self.class.name}: continue (no tool call) #{continues}/#{MAX_CONTINUES}")
+      conv_write(conv, "## Continue (no tool call), #{continues}/#{MAX_CONTINUES}\n\n---\n\n")
+      messages << { role: 'user', content: 'Continue your analysis. Call a tool if you need more context, otherwise set "done": true and put your complete findings in "message".' }
     end
 
-    log_info("#{self.class.name}: Done — #{tool_calls_made} tool calls")
+    log_info("#{self.class.name}: Done, #{tool_calls_made} tool calls")
     conv_write(conv, "## Summary\n\n**Tool calls:** #{tool_calls_made}\n\n### Findings\n\n#{findings}\n")
     conv.close
 
@@ -125,9 +143,20 @@ class BaseAgent < ApplicationService
   end
 
   def parse_json_response(text)
-    JSON.parse(text.strip.gsub(/\A```(?:json)?\s*|\s*```\z/, ''))
+    clean = text.strip.gsub(/\A```(?:json)?\s*|\s*```\z/, '')
+    JSON.parse(clean)
   rescue JSON::ParserError
-    { 'message' => text, 'done' => true }
+    salvage_response(clean)
+  end
+
+  def salvage_response(text)
+    match = text.match(/"message"\s*:\s*"(.*)"\s*,?\s*"(?:done|tool_call)"/m) ||
+            text.match(/"message"\s*:\s*"(.*)"\s*}/m)
+    return { 'message' => text, 'done' => true } unless match
+
+    message = match[1].gsub('\n', "\n").gsub('\t', "\t").gsub('\"', '"')
+    done = text !~ /"done"\s*:\s*false/
+    { 'message' => message, 'done' => done }
   end
 
   def format_diff_for_prompt(parsed_diff)

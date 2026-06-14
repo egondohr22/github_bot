@@ -37,7 +37,7 @@ class AgentOrchestrator < ApplicationService
     raw = @gemini.generate_content(prompt, model: @config.dig('orchestrator', 'model'), context: pr_data, agent_key: 'orchestrator_plan')
     plan = parse_routing_plan(raw, parsed_diff.keys)
 
-    log_info("AgentOrchestrator: Routing — #{plan[:routing].map { |k, v| "#{k}:#{v.size}" }.join(', ')}")
+    log_info("AgentOrchestrator: Routing: #{plan[:routing].map { |k, v| "#{k}:#{v.size}" }.join(', ')}")
     plan
   end
 
@@ -53,7 +53,7 @@ class AgentOrchestrator < ApplicationService
 
     { summary: parsed['summary'].to_s, routing: routing }
   rescue JSON::ParserError
-    log_error("AgentOrchestrator: Could not parse routing plan — using fallback")
+    log_error("AgentOrchestrator: Could not parse routing plan, using fallback")
     fallback_routing(all_files)
   end
 
@@ -82,7 +82,7 @@ class AgentOrchestrator < ApplicationService
       result[:files_reviewed] = files
       result
     rescue => e
-      log_error("AgentOrchestrator: #{agent_class.name} failed — #{e.message}")
+      log_error("AgentOrchestrator: #{agent_class.name} failed: #{e.message}")
       { agent: key, findings: "Review failed: #{e.message}", priority: 'error', tool_calls: 0, files_reviewed: files }
     end
   end
@@ -104,7 +104,7 @@ class AgentOrchestrator < ApplicationService
   end
 
   def format_fallback_review(agent_results, pr_data)
-    lines = ["## AI Code Review — PR ##{pr_data['pr_number']}\n"]
+    lines = ["## AI Code Review: PR ##{pr_data['pr_number']}\n"]
     agent_results.each { |r| lines << "### #{r[:agent]} Review\n#{r[:findings]}\n" }
     lines.join("\n") + "\n---\n*Reviewed by AI Agent System*"
   end

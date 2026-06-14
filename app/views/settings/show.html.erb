@@ -2,7 +2,7 @@
 
 <%
   agent_meta = {
-    "security"     => { label: "Security",     description: "Finds vulnerabilities — injection, XSS, auth bypass, secrets." },
+    "security"     => { label: "Security",     description: "Finds vulnerabilities: injection, XSS, auth bypass, secrets." },
     "code_quality" => { label: "Code Quality", description: "Checks Rails conventions, SOLID, DRY and readability." },
     "performance"  => { label: "Performance",  description: "Spots N+1 queries, missing indexes and bottlenecks." }
   }
@@ -14,7 +14,6 @@
     <p class="text-sm theme-text-secondary mt-0.5">Manage your account and how the AI reviews your pull requests.</p>
   </div>
 
-  <%# ── Account ───────────────────────────────────────────── %>
   <div class="card overflow-hidden">
     <div class="px-5 py-4 border-b theme-border">
       <h2 class="text-sm font-semibold theme-text-primary">Account</h2>
@@ -32,7 +31,6 @@
     </div>
   </div>
 
-  <%# ── Review configuration ──────────────────────────────── %>
   <%= form_with url: settings_path, method: :patch do |f| %>
     <div class="card">
       <div class="px-5 py-4 border-b theme-border">
@@ -40,7 +38,6 @@
         <p class="text-xs theme-text-secondary mt-0.5">Toggle agents, set how much each is emphasized, and how deeply they investigate.</p>
       </div>
 
-      <%# Agents %>
       <div class="px-5 py-4 space-y-2.5">
         <div class="text-xs font-semibold theme-text-secondary uppercase tracking-wide mb-1">Review Agents</div>
         <% ReviewSettings.available_agents.each do |agent| %>
@@ -51,7 +48,7 @@
               <p class="text-xs theme-text-secondary truncate"><%= meta[:description] %></p>
             </div>
             <div class="flex items-center gap-3 flex-shrink-0">
-              <%# Priority — controls emphasis in the final synthesized review %>
+
               <% current_priority = @review_settings.priority_for(agent) %>
               <div class="relative w-32" data-controller="select">
                 <input type="hidden" name="agent_priorities[<%= agent %>]" data-select-target="input" value="<%= current_priority %>">
@@ -85,7 +82,7 @@
                   </div>
                 </div>
               </div>
-              <%# Enable / disable toggle %>
+
               <label class="relative cursor-pointer flex-shrink-0">
                 <input type="checkbox" name="enabled_agents[]" value="<%= agent %>"
                        <%= "checked" if @review_settings.agent_enabled?(agent) %>
@@ -98,7 +95,6 @@
         <% end %>
       </div>
 
-      <%# Max tool calls %>
       <div class="px-5 py-4 border-t theme-border">
         <label for="max_tool_calls" class="block text-xs font-semibold theme-text-secondary uppercase tracking-wide mb-2">
           Max Tool Calls Per Agent
@@ -117,7 +113,6 @@
         </p>
       </div>
 
-      <%# Actions %>
       <div class="px-5 py-3 border-t theme-border theme-bg-secondary rounded-b-xl flex justify-end">
         <%= f.submit "Save changes", class: "btn-primary text-sm" %>
       </div>

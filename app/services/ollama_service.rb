@@ -10,7 +10,7 @@ class OllamaService < ApplicationService
       model: model,
       prompt: prompt,
       stream: false,
-      options: { temperature: temperature, num_predict: 2000 }
+      options: { temperature: temperature, num_predict: 5000 }
     }
     body[:system] = system if system
 
@@ -31,7 +31,7 @@ class OllamaService < ApplicationService
       model: model,
       messages: messages,
       stream: false,
-      options: { temperature: temperature, num_predict: 2000 }
+      options: { temperature: temperature, num_predict: 5000 }
     }
 
     response = @http.post("#{API_BASE_URL}/api/chat", body: body)

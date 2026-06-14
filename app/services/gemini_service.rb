@@ -9,7 +9,7 @@ class GeminiService < ApplicationService
 
   def generate_content(prompt, model: DEFAULT_MODEL, context: {}, agent_key: nil)
     conv = open_conversation_log(context, agent_key, model) if agent_key
-    conv_write(conv, "# PR \##{context['pr_number']} — #{agent_key}\n\n")
+    conv_write(conv, "# PR \##{context['pr_number']}: #{agent_key}\n\n")
     conv_write(conv, "**Model:** #{model}\n\n---\n\n")
     conv_write(conv, "## Prompt\n\n#{prompt}\n\n---\n\n")
 
@@ -22,8 +22,8 @@ class GeminiService < ApplicationService
       conv_write(conv, "## Response\n\n#{text}\n")
       text
     else
-      log_error("Gemini API error: #{response[:status]} - #{response[:raw_body]}")
-      conv_write(conv, "## Error\n\n#{response[:status]} — #{response[:raw_body]}\n")
+      log_error("Gemini API error: #{response[:status]}: #{response[:raw_body]}")
+      conv_write(conv, "## Error\n\n#{response[:status]}: #{response[:raw_body]}\n")
       nil
     end
   rescue HttpService::RequestError => e
