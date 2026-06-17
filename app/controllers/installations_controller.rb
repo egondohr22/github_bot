@@ -11,8 +11,8 @@ class InstallationsController < ApplicationController
   end
 
   def create
-    @installation = current_user.installations.build(installation_params)
-    @installation.owner ||= @installation.repo.to_s.split("/").first
+    repo = (params[:manual_repo].presence || params.dig(:installation, :repo)).to_s.strip
+    @installation = current_user.installations.build(repo: repo, owner: repo.split("/").first)
     if @installation.save
       redirect_to @installation, notice: "Repo added successfully."
     else
@@ -38,9 +38,5 @@ class InstallationsController < ApplicationController
     Rails.cache.fetch("github_repos/#{current_user.id}", expires_in: 5.minutes) do
       GithubService.new(token: current_user.github_token).list_repos
     end
-  end
-
-  def installation_params
-    params.require(:installation).permit(:owner, :repo)
   end
 end
