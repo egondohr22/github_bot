@@ -13,11 +13,11 @@ class AgentOrchestrator < ApplicationService
     @settings = settings
   end
 
-  def orchestrate_review(parsed_diff, pr_data, github_token:, repo_cloner: nil)
+  def orchestrate_review(parsed_diff, pr_data, token:, repo_cloner: nil)
     log_info("AgentOrchestrator: Starting review for PR ##{pr_data['pr_number']}")
 
     routing_plan = create_review_plan(parsed_diff, pr_data)
-    agent_results = execute_agents_with_routing(parsed_diff, pr_data, routing_plan[:routing], github_token, repo_cloner)
+    agent_results = execute_agents_with_routing(parsed_diff, pr_data, routing_plan[:routing], token, repo_cloner)
     agent_results.sort_by! { |r| -ReviewSettings.priority_weight(r[:priority]) }
     final_review = synthesize_review(pr_data, agent_results, routing_plan[:summary])
 
@@ -64,8 +64,8 @@ class AgentOrchestrator < ApplicationService
     }
   end
 
-  def execute_agents_with_routing(parsed_diff, pr_data, routing, github_token, repo_cloner)
-    github = GithubService.new(token: github_token)
+  def execute_agents_with_routing(parsed_diff, pr_data, routing, token, repo_cloner)
+    github = GithubService.new(token: token)
 
     AGENT_CLASSES.filter_map do |key, agent_class|
       unless @settings.agent_enabled?(key)

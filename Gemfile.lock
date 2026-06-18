@@ -421,6 +421,7 @@ DEPENDENCIES
   devise
   dotenv-rails
   importmap-rails
+  jwt
   kamal
   omniauth-github
   omniauth-rails_csrf_protection

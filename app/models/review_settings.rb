@@ -1,7 +1,3 @@
-# Wraps the per-user review config stored in the `settings` table (a jsonb hash
-# under the key "review"). Every getter returns the user's stored value, or
-# falls back to a default defined here when it isn't set. The rest of the app
-# only talks to this wrapper, so defaults live in exactly one place.
 class ReviewSettings
   KEY = "review".freeze
 
@@ -9,7 +5,6 @@ class ReviewSettings
   MIN_TOOL_CALLS = 1
   MAX_TOOL_CALLS = 50
 
-  # Ordered low → high; the index is the emphasis weight used during synthesis.
   PRIORITY_LEVELS = %w[low medium high critical].freeze
   DEFAULT_PRIORITY = "medium".freeze
 

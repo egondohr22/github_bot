@@ -40,6 +40,7 @@ gem 'dotenv-rails'
 gem "devise"
 gem "omniauth-github"
 gem "omniauth-rails_csrf_protection"
+gem "jwt"
 gem "propshaft"
 gem "importmap-rails"
 gem "turbo-rails"

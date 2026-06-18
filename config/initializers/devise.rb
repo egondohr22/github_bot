@@ -312,7 +312,7 @@ Devise.setup do |config|
   config.omniauth :github,
     ENV["GITHUB_CLIENT_ID"],
     ENV["GITHUB_CLIENT_SECRET"],
-    scope: "repo,read:user,user:email"
+    scope: "read:user,user:email"
 
   # ==> Configuration for :registerable
 

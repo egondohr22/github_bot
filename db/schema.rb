@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_10_161823) do
+ActiveRecord::Schema[8.0].define(version: 2026_06_18_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -33,6 +33,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_10_161823) do
     t.text "webhook_secret", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "github_installation_id"
     t.index ["user_id", "repo"], name: "index_installations_on_user_id_and_repo", unique: true
     t.index ["user_id"], name: "index_installations_on_user_id"
   end

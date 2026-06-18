@@ -11,6 +11,4 @@ class Installation < ApplicationRecord
   def generate_webhook_secret
     self.webhook_secret = SecureRandom.hex(32)
   end
-
-  delegate :github_token, to: :user
 end

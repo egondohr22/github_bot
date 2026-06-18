@@ -5,15 +5,15 @@ class GeminiReviewJob < ApplicationJob
   def perform(review_id)
     review = Review.find(review_id)
     pr = review.pull_request
-    token = pr.installation.github_token
     pr_data = pr.as_context_hash.merge('comment' => review.triggered_by_comment)
+    token = GithubAppAuth.new.token_for(pr.installation)
 
     review.update!(status: 'reviewing')
     parsed_diff = DiffParser.parse(review.raw_diff)
     settings = pr.installation.user.review_settings
 
     RepoCloner.with(owner: pr_data['owner'], repo: pr_data['repo'], ref: pr_data['head_branch'], token: token) do |cloner|
-      result = AgentOrchestrator.new(settings).orchestrate_review(parsed_diff, pr_data, github_token: token, repo_cloner: cloner)
+      result = AgentOrchestrator.new(settings).orchestrate_review(parsed_diff, pr_data, token: token, repo_cloner: cloner)
       final_comment = result[:comment]
       persist_agent_results(review, result[:agent_results])
 
