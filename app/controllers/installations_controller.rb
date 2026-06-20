@@ -14,7 +14,11 @@ class InstallationsController < ApplicationController
     repo = (params[:manual_repo].presence || params.dig(:installation, :repo)).to_s.strip
     @installation = current_user.installations.build(repo: repo, owner: repo.split("/").first)
     if @installation.save
-      redirect_to @installation, notice: "Repo added successfully."
+      flash.now[:notice] = "Repo added successfully."
+      respond_to do |format|
+        format.turbo_stream
+        format.html { redirect_to @installation, notice: "Repo added successfully." }
+      end
     else
       @repos = cached_repos
       render :new, status: :unprocessable_entity

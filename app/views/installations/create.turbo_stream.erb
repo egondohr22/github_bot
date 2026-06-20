@@ -1,0 +1,10 @@
+<%= turbo_stream.replace "modal" do %>
+  <%= render template: "installations/show" %>
+<% end %>
+
+<%= turbo_stream.update "notifications" do %>
+  <%= render "shared/flash" %>
+<% end %>
+
+<%= turbo_stream.remove "installations_empty" %>
+<%= turbo_stream.append "installations_list", @installation %>

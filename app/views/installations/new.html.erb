@@ -1,6 +1,6 @@
 <turbo-frame id="modal">
   <%= render "shared/modal", title: "Add Repository" do %>
-    <%= form_with model: @installation, data: { turbo_frame: "_top" } do |f| %>
+    <%= form_with model: @installation do |f| %>
       <% if @installation.errors.any? %>
         <div class="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
           <% @installation.errors.full_messages.each do |msg| %>
