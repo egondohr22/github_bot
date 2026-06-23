@@ -2,7 +2,7 @@ require "jwt"
 require "openssl"
 
 class GithubAppAuth
-  API_BASE_URL = "https://api.github.com".freeze
+  API_BASE_URL = ENV['GITHUB_API_BASE_URL']
 
   TOKEN_PERMISSIONS = { "contents" => "read", "pull_requests" => "write" }.freeze
 
