@@ -55,7 +55,7 @@ jobs:
           OWNER="${{ github.repository_owner }}"
           REPO="$OWNER/${{ github.event.repository.name }}"
 
-          DIFF=$(git diff origin/$BASE...origin/$HEAD | head -n 500)
+          DIFF=$(git diff origin/$BASE...origin/$HEAD)
 
           PAYLOAD=$(jq -n \
             --arg pr "$PR_NUMBER" \
