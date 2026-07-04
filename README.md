@@ -1,24 +1,60 @@
-# README
+## Requirements
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+- Ruby 3.3.3+
+- PostgreSQL 14+
+- Google Gemini API key
+- GitHub APP client id and client secret
+- GitHub OAuth client id and client secret
+## Build Steps
 
-Things you may want to cover:
+### 1. Clone and Install
 
-* Ruby version
+```bash
+git clone <repository-url>
+cd github_bot
+bundle install
+```
 
-* System dependencies
+### 2. Configure Environment
 
-* Configuration
+Create `.env` file:
 
-* Database creation
+GEMINI_API_KEY=your_gemini_api_key
+POSTGRES_PASSWORD=your_password
+GITHUB_APP_ID=your_github_app_id
+GITHUB_APP_PRIVATE_KEY_PATH=/path/to/private-key.pem
+GITHUB_CLIENT_ID=your_github_oauth_client_id
+GITHUB_CLIENT_SECRET=your_github_oauth_client_secret
 
-* Database initialization
+### 3. Setup Database
 
-* How to run the test suite
+```bash
+rails db:create
+rails db:migrate
+```
 
-* Services (job queues, cache servers, search engines, etc.)
+### Start the Application
 
-* Deployment instructions
+```bash
+bin/dev
+```
 
-* ...
+This starts:
+- Rails server on http://localhost:3000
+- Background job processor
+- CSS watcher
+
+The application is now running and ready to use.
+
+### Alternative: Start Services Separately
+
+```bash
+# Terminal 1
+rails server
+
+# Terminal 2
+bin/jobs
+
+# Terminal 3
+rails tailwindcss:watch
+```
