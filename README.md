@@ -19,12 +19,14 @@ bundle install
 
 Create `.env` file:
 
+```bash
 GEMINI_API_KEY=your_gemini_api_key
 POSTGRES_PASSWORD=your_password
 GITHUB_APP_ID=your_github_app_id
 GITHUB_APP_PRIVATE_KEY_PATH=/path/to/private-key.pem
 GITHUB_CLIENT_ID=your_github_oauth_client_id
 GITHUB_CLIENT_SECRET=your_github_oauth_client_secret
+```
 
 ### 3. Setup Database
 
